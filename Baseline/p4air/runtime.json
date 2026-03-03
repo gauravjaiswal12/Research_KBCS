@@ -1,0 +1,83 @@
+{
+    "target": "bmv2",
+    "p4info": "build/p4air.p4info.txt",
+    "bmv2_json": "build/p4air.json",
+    "table_entries": [
+        {
+            "table": "P4airIngress.ipv4_lpm",
+            "default_action": true,
+            "action_name": "P4airIngress.drop",
+            "action_params": {}
+        },
+        {
+            "table": "P4airIngress.ipv4_lpm",
+            "match": {
+                "hdr.ipv4.dstAddr": [
+                    "10.0.0.1",
+                    32
+                ]
+            },
+            "action_name": "P4airIngress.ipv4_forward",
+            "action_params": {
+                "dstAddr": "00:00:00:00:00:01",
+                "port": 1
+            }
+        },
+        {
+            "table": "P4airIngress.ipv4_lpm",
+            "match": {
+                "hdr.ipv4.dstAddr": [
+                    "10.0.0.2",
+                    32
+                ]
+            },
+            "action_name": "P4airIngress.ipv4_forward",
+            "action_params": {
+                "dstAddr": "00:00:00:00:00:02",
+                "port": 2
+            }
+        },
+        {
+            "table": "P4airIngress.ipv4_lpm",
+            "match": {
+                "hdr.ipv4.dstAddr": [
+                    "10.0.0.3",
+                    32
+                ]
+            },
+            "action_name": "P4airIngress.ipv4_forward",
+            "action_params": {
+                "dstAddr": "00:00:00:00:00:03",
+                "port": 3
+            }
+        },
+        {
+            "table": "P4airIngress.ipv4_lpm",
+            "match": {
+                "hdr.ipv4.dstAddr": [
+                    "10.0.0.4",
+                    32
+                ]
+            },
+            "action_name": "P4airIngress.ipv4_forward",
+            "action_params": {
+                "dstAddr": "00:00:00:00:00:04",
+                "port": 4
+            }
+        },
+        {
+            "table": "P4airIngress.ipv4_lpm",
+            "match": {
+                "hdr.ipv4.dstAddr": [
+                    "10.0.0.100",
+                    32
+                ]
+            },
+            "action_name": "P4airIngress.ipv4_forward",
+            "action_params": {
+                "dstAddr": "00:00:00:00:00:64",
+                "port": 5
+            }
+        }
+    ]
+}
