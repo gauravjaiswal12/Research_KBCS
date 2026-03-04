@@ -87,9 +87,36 @@ traffic-8: build
 		--priority-queues 8
 
 # ==============================================================================
+# Baseline build targets — compile baseline P4 programs
+# ==============================================================================
+
+# Build No AQM baseline (simple FIFO forwarding)
+build-noaqm:
+	mkdir -p $(BUILD_DIR)
+	$(P4C) --p4v 16 -o $(BUILD_DIR)/no_aqm.json p4src/no_aqm.p4
+	@echo "=== no_aqm.p4 compiled ==="
+
+# Build Different Queues baseline (hash-based queue assignment)
+build-diffq:
+	mkdir -p $(BUILD_DIR)
+	$(P4C) --p4v 16 -o $(BUILD_DIR)/diff_queues.json p4src/diff_queues.p4
+	@echo "=== diff_queues.p4 compiled ==="
+
+# Build ALL P4 programs (P4air + baselines)
+build-all: build build-noaqm build-diffq
+	@echo "=== All 3 P4 programs compiled ==="
+
+# ==============================================================================
+# Compare target — run full comparison experiment
+# ==============================================================================
+compare: build-all
+	sudo PYTHONPATH=$$PYTHONPATH:$(PWD)/utils python3 experiments/run_comparison.py \
+		--duration 30 --num-clients 4 --ccas $(DEFAULT_CCAS)
+
+# ==============================================================================
 # Clean target — remove all generated files
 # ==============================================================================
 clean:
 	rm -rf $(BUILD_DIR) $(PCAP_DIR) $(LOG_DIR) results
 
-.PHONY: build run test traffic traffic-8 clean
+.PHONY: build run test traffic traffic-8 build-noaqm build-diffq build-all compare clean

@@ -1,5 +1,5 @@
 /* =============================================================================
- * egress.p4 — P4air Egress Pipeline (Phase 3: Full Fingerprinting Egress Part)
+ * egress.p4 — P4air Egress Pipeline (COMPLETE: Phases 2-5)
  * =============================================================================
  * Implements:
  *   ✅ Phase 2: Register declarations + enqueue depth tracking
@@ -9,12 +9,15 @@
  *      - Streak counting (consecutive aggressive RTT intervals)
  *      - Group reclassification: delay → loss-delay → purely-loss
  *      - Recirculation on group change (back to ingress for register update)
- *   TODO Phase 4: Reallocation (egress part) — recirculate with queue update
+ *   ✅ Phase 4: Reallocation — recirculate on group change triggers ingress realloc
+ *   ✅ Phase 5: Apply Actions (egress part):
+ *      - DELAY action for delay-based flows (recirculate to add processing delay)
  *
- * Why egress?
- *   standard_metadata.enq_qdepth is only available AFTER the packet has been
- *   queued, which only happens in the egress pipeline. So all queue-depth
- *   based statistics must be tracked here.
+ * Why egress for the delay action?
+ *   recirculate() can only be called from egress in v1model.
+ *   Delay-based CCAs (Vegas, LoLa) use RTT as their primary metric.
+ *   By recirculating their packets (extra round through the pipeline),
+ *   we artificially increase the RTT, causing them to back off voluntarily.
  * =========================================================================== */
 
 #ifndef _P4AIR_EGRESS_P4_
@@ -27,6 +30,13 @@
 control P4airEgress(inout parsed_headers_t hdr,
                     inout p4air_metadata_t meta,
                     inout standard_metadata_t standard_metadata) {
+
+    /* Field list ID for recirculate — tells BMv2 which metadata fields
+     * to preserve when recirculating a packet back to ingress. */
+    @name("recirc_fl")
+    action do_recirculate() {
+        recirculate_preserving_field_list((bit<8>)0);
+    }
 
     /* =========================================================================
      * EGRESS-SIDE REGISTERS
@@ -114,6 +124,31 @@ control P4airEgress(inout parsed_headers_t hdr,
             }
 
             /* ==========================================================
+             * STEP 3.5: APPLY ACTIONS — DELAY for delay-based flows
+             * Paper Section III-D: "For delay-based algorithms, P4air
+             * recirculates packets causing additional processing delay.
+             * Since these CCAs use RTT as their primary metric, the
+             * added delay causes them to voluntarily back off."
+             *
+             * This must happen in egress because recirculate() is only
+             * available here in v1model. The BDP check was done in
+             * ingress and the result is in meta.num_pkts / meta.bdp.
+             *
+             * We only recirculate if:
+             *   1. Flow is delay-based (GROUP_DELAY)
+             *   2. Flow has exceeded its BDP (sending above fair share)
+             *   3. Packet is not already a recirculated copy (prevent loops)
+             * ========================================================== */
+            if (eg_group == GROUP_DELAY &&
+                meta.num_pkts > meta.bdp &&
+                standard_metadata.instance_type == 0) {
+                /* Recirculate: packet goes through the pipeline again.
+                 * This adds ~1 pipeline processing time worth of delay,
+                 * which delay-based CCAs detect as increased RTT. */
+                do_recirculate();
+            }
+
+            /* ==========================================================
              * STEP 4: RTT INTERVAL BOUNDARY CHECK (Egress Side)
              * At the end of each RTT interval, compute aggressiveness
              * and check for group reclassification.
@@ -196,7 +231,7 @@ control P4airEgress(inout parsed_headers_t hdr,
                      * so ingress can update the master group register and
                      * run the reallocation algorithm. */
                     if (meta.group_changed == 1) {
-                        recirculate(meta);
+                        do_recirculate();
                     }
 
                 } /* end: egress RTT interval boundary */

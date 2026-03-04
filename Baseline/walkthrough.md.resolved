@@ -1,0 +1,35 @@
+# P4air Baseline — Walkthrough (Phases 1–5)
+
+## Summary
+Implemented the complete P4air data plane (v1model/BMv2), deployed to VM, and verified: **compilation ✅, switch startup ✅, 20/20 pings ✅**.
+
+## Bugs Fixed During Testing
+
+| Issue | Root Cause | Fix |
+|-------|-----------|-----|
+| [ingress.p4](file:///e:/Research%20Methodology/Project-Implementation/kbcs/p4src/ingress.p4) compilation error | `6 / active_groups` — P4 has no runtime division | Replaced with if-else chain (1→6, 2→3, 3→2, 4→1) |
+| Switch failed to start | `--priority-queues` is a BMv2 target-specific flag | Changed from `sw_path` injection to `json_path` with `--` separator |
+| Missing `netstat.py` | KBCS [p4_mininet.py](file:///e:/Research%20Methodology/Project-Implementation/Baseline/p4air/utils/p4_mininet.py) imports it | Copied from `~/kbcs/utils/` |
+
+## Test Results
+
+```
+*** Ping: testing ping reachability
+h1 -> h2 h3 h4 server 
+h2 -> h1 h3 h4 server 
+h3 -> h1 h2 h4 server 
+h4 -> h1 h2 h3 server 
+server -> h1 h2 h3 h4 
+*** Results: 0% dropped (20/20 received)
+```
+
+## Module Summary
+
+| Module | File(s) | Key Features |
+|--------|---------|-------------|
+| **Fingerprinting** | [ingress.p4](file:///e:/Research%20Methodology/Project-Implementation/kbcs/p4src/ingress.p4) + [egress.p4](file:///e:/Research%20Methodology/Project-Implementation/kbcs/p4src/egress.p4) | SYN-based RTT, BDP, slow-start, BwEst/BBR, aggressiveness, streak |
+| **Reallocation** | [ingress.p4](file:///e:/Research%20Methodology/Project-Implementation/kbcs/p4src/ingress.p4) | Proportional queue boundaries (Q2–Q7), round-robin assignment |
+| **Apply Actions** | [ingress.p4](file:///e:/Research%20Methodology/Project-Implementation/kbcs/p4src/ingress.p4) + [egress.p4](file:///e:/Research%20Methodology/Project-Implementation/kbcs/p4src/egress.p4) | Drop (loss), Delay/recirculate (delay-based), Window halve (BBR) |
+
+## Next: Phase 6 — Evaluation & Comparison
+Build baseline P4 programs and run fairness experiments with Jain's Fairness Index.

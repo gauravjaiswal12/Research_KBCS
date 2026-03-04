@@ -111,32 +111,45 @@ struct parsed_headers_t {
  * =========================================================================== */
 struct p4air_metadata_t {
     /* ---- Flow Identification ---- */
+    @field_list(0)
     bit<16> flow_id;              /* Hash of 5-tuple → index into registers */
 
     /* ---- Flow Classification ---- */
+    @field_list(0)
     bit<3>  flow_group;           /* Current group (GROUP_ANT ... GROUP_MODEL) */
+    @field_list(0)
     bit<3>  prev_group;           /* Previous group before reclassification   */
+    @field_list(0)
     bit<1>  group_changed;        /* 1 if group was just reclassified         */
+    @field_list(0)
     bit<1>  is_recirculated;      /* 1 if this packet was recirculated        */
 
     /* ---- RTT Tracking ---- */
+    @field_list(0)
     bit<48> rtt_estimate;         /* Estimated RTT in microseconds            */
+    @field_list(0)
     bit<48> rtt_start;            /* Start timestamp of current RTT interval  */
     bit<1>  rtt_valid;            /* 1 if RTT has been estimated              */
 
     /* ---- Per-RTT Statistics ---- */
+    @field_list(0)
     bit<32> num_pkts;             /* Packets processed in current RTT interval */
+    @field_list(0)
     bit<32> num_pkts_prev;        /* Packets from previous RTT interval       */
     bit<32> max_enq_len;          /* Max enqueue depth in current RTT         */
     bit<32> max_enq_len_prev;     /* Max enqueue depth from previous RTT      */
 
     /* ---- Fingerprinting Metrics ---- */
     bit<8>  aggressiveness;       /* How fast queues fill (0-255)             */
+    @field_list(0)
     bit<8>  aggr_streak;          /* Consecutive RTTs with queue growth       */
+    @field_list(0)
     bit<8>  bwest_counter;        /* BW estimation pattern counter for BBR   */
+    @field_list(0)
     bit<32> bdp;                  /* Bandwidth-delay product estimate         */
 
     /* ---- Queue Assignment ---- */
+    @field_list(0)
     bit<3>  assigned_queue;       /* Queue ID (0-7) for scheduling            */
 }
 

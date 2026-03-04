@@ -214,14 +214,23 @@ control P4airIngress(inout parsed_headers_t hdr,
                         if (loss_flows > 0)        { active_groups = active_groups + 1; }
                         if (model_flows > 0)       { active_groups = active_groups + 1; }
 
-                        /* Ensure we don't divide by zero */
+                        /* Ensure we don't have zero active groups */
                         if (active_groups == 0) {
                             active_groups = 1;
                         }
 
-                        /* Base queues per group: 6 / active_groups */
-                        bit<3> base_q = (bit<3>)(6 / (bit<32>)active_groups);
-                        if (base_q == 0) { base_q = 1; }
+                        /* Base queues per group: 6 / active_groups
+                         * P4 has no runtime division, so we use if-else. */
+                        bit<3> base_q;
+                        if (active_groups == 1) {
+                            base_q = 6;
+                        } else if (active_groups == 2) {
+                            base_q = 3;
+                        } else if (active_groups == 3) {
+                            base_q = 2;
+                        } else {
+                            base_q = 1;  /* 4 groups → 1 queue each, 2 remaining */
+                        }
 
                         /* Assign queue ranges for each long-lived group */
                         /* DELAY group */
@@ -343,9 +352,11 @@ control P4airIngress(inout parsed_headers_t hdr,
                     meta.num_pkts = num_pkts;
 
                     /* BDP calculation: BDP ≈ RTT >> s (shift approximation)
-                     * s=4 for our 10Mbps / 4-flow default setup */
-                    meta.bdp = (bit<32>)(current_rtt >> 4);
-                    if (meta.bdp < 2) { meta.bdp = 2; }
+                     * s=10 for BMv2 emulation on 10Mbps / 4-flow setup.
+                     * RTT in BMv2 is µs: 10ms = 10000µs → BDP = 10000>>10 ≈ 10 pkts.
+                     * At 10Mbps w/ 1500B MTU, ~8 pkts/RTT, so BDP≈10 is appropriate. */
+                    meta.bdp = (bit<32>)(current_rtt >> 10);
+                    if (meta.bdp < 10) { meta.bdp = 10; }
 
                     /* Check RTT interval boundary */
                     bit<48> elapsed;

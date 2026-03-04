@@ -31,31 +31,24 @@ import argparse
 # These will be compiled before running experiments
 # --------------------------------------------------------------------------
 CONFIGS = {
+    'no_aqm': {
+        'p4_source': 'p4src/no_aqm.p4',
+        'json_path': 'build/no_aqm.json',
+        'description': 'No AQM (simple forwarding, single FIFO queue)',
+        'priority_queues': 0
+    },
+    'diff_queues': {
+        'p4_source': 'p4src/diff_queues.p4',
+        'json_path': 'build/diff_queues.json',
+        'description': 'Different Queues (hash-based static queue assignment)',
+        'priority_queues': 8
+    },
     'p4air': {
         'p4_source': 'p4src/p4air.p4',
         'json_path': 'build/p4air.json',
         'description': 'P4air (Full: Fingerprinting + Reallocation + Apply Actions)',
         'priority_queues': 8
     },
-    # Baselines will be added in Phase 6 when the baseline P4 programs are created
-    # 'no_aqm': {
-    #     'p4_source': '../baselines/no_aqm/p4src/no_aqm.p4',
-    #     'json_path': 'build/no_aqm.json',
-    #     'description': 'No AQM (simple forwarding, FIFO)',
-    #     'priority_queues': 0
-    # },
-    # 'diff_queues': {
-    #     'p4_source': '../baselines/diff_queues/p4src/diff_queues.p4',
-    #     'json_path': 'build/diff_queues.json',
-    #     'description': 'Different Queues (hash-based queue separation)',
-    #     'priority_queues': 8
-    # },
-    # 'idle_p4air': {
-    #     'p4_source': 'p4src/p4air.p4',  # Same source, but actions disabled
-    #     'json_path': 'build/idle_p4air.json',
-    #     'description': 'Idle P4air (Fingerprinting + Reallocation only)',
-    #     'priority_queues': 8
-    # },
 }
 
 
@@ -107,6 +100,12 @@ def run_experiment(config_name, config, num_clients, ccas, duration, bw, delay):
     print("  Running: %s" % config['description'])
     print("  Config:  %d clients, CCAs=%s, %ds" % (num_clients, ccas, duration))
     print("=" * 60)
+
+    # Clean up any leftover Mininet/switch state from previous experiments
+    print("  Cleaning up previous Mininet state...")
+    subprocess.run(['sudo', 'mn', '-c'], capture_output=True, timeout=15)
+    subprocess.run(['sudo', 'killall', '-9', 'simple_switch'], capture_output=True)
+    time.sleep(3)
 
     cmd = [
         'sudo', 'python3', 'topology.py',

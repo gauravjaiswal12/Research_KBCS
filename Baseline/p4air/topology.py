@@ -48,18 +48,26 @@ class P4airSwitch(P4Switch):
 
     BMv2's simple_switch supports up to 8 priority queues per port.
     P4air uses 8 queues: 0=ants, 1=mice, 2-7=CCA groups (Round Robin).
+
+    Note: --priority-queues is a TARGET-SPECIFIC option in BMv2.
+    It must come AFTER the '--' separator in the command line:
+    simple_switch [options] <json> -- --priority-queues 8
     """
     def __init__(self, name, priority_queues=8, **kwargs):
         P4Switch.__init__(self, name, **kwargs)
         self.priority_queues = priority_queues
 
     def start(self, controllers):
-        """Inject --priority-queues flag into simple_switch command."""
+        """Inject --priority-queues as a target-specific flag after the JSON path.
+
+        BMv2 command format: simple_switch [opts] <json> -- --priority-queues N
+        We achieve this by appending '-- --priority-queues N' to json_path,
+        since P4Switch.start() puts json_path at the end of the command."""
         if self.priority_queues > 0:
-            original_sw_path = self.sw_path
-            self.sw_path = self.sw_path + ' --priority-queues %d' % self.priority_queues
+            original_json_path = self.json_path
+            self.json_path = self.json_path + ' -- --priority-queues %d' % self.priority_queues
             P4Switch.start(self, controllers)
-            self.sw_path = original_sw_path
+            self.json_path = original_json_path
         else:
             P4Switch.start(self, controllers)
 

@@ -106,30 +106,6 @@ control P4airComputeChecksum(inout parsed_headers_t hdr,
             hdr.ipv4.hdrChecksum,
             HashAlgorithm.csum16
         );
-
-        /* Recompute TCP checksum (pseudo-header + TCP header + payload).
-         * This is CRITICAL when the Apply Actions module modifies tcp.window.
-         * Uses the standard TCP pseudo-header fields for checksum calculation. */
-        update_checksum_with_payload(
-            hdr.tcp.isValid(),
-            { hdr.ipv4.srcAddr,       /* Pseudo-header: source IP   */
-              hdr.ipv4.dstAddr,       /* Pseudo-header: dest IP     */
-              8w0,                     /* Pseudo-header: zero        */
-              hdr.ipv4.protocol,      /* Pseudo-header: protocol    */
-              /* TCP header fields */
-              hdr.tcp.srcPort,
-              hdr.tcp.dstPort,
-              hdr.tcp.seqNo,
-              hdr.tcp.ackNo,
-              hdr.tcp.dataOffset,
-              hdr.tcp.res,
-              hdr.tcp.ecn,
-              hdr.tcp.ctrl,
-              hdr.tcp.window,
-              hdr.tcp.urgentPtr },
-            hdr.tcp.checksum,
-            HashAlgorithm.csum16
-        );
     }
 }
 
