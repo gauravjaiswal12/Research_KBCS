@@ -9,6 +9,8 @@ RUN_SCRIPT = PYTHONPATH=$$PYTHONPATH:$(PWD)/utils python3 $(TOPO)
 compiled_json := $(BUILD_DIR)/kbcs.json
 baseline_json := $(BUILD_DIR)/kbcs_baseline.json
 
+.PHONY: all build build-baseline run test traffic baseline-traffic clean
+
 all: run
 
 build:

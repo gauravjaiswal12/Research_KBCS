@@ -2,6 +2,9 @@
 #ifndef _HEADERS_P4_
 #define _HEADERS_P4_
 
+#include <core.p4>
+#include <v1model.p4>
+
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
@@ -41,10 +44,20 @@ header tcp_t {
     bit<16> urgentPtr;
 }
 
+header kbcs_telemetry_t {
+    bit<8>  karma_score;
+    bit<2>  color;
+    bit<3>  queue_id;
+    bit<19> enq_qdepth;
+    bit<1>  is_dropped;
+    bit<7>  padding;
+}
+
 struct parsed_headers_t {
-    ethernet_t ethernet;
-    ipv4_t     ipv4;
-    tcp_t      tcp;
+    ethernet_t       ethernet;
+    ipv4_t           ipv4;
+    tcp_t            tcp;
+    kbcs_telemetry_t kbcs_telemetry;
 }
 
 struct local_metadata_t {
@@ -52,7 +65,11 @@ struct local_metadata_t {
     bit<32> flow_bytes;
     bit<16> karma_score;
     bit<2>  flow_color;
+    bit<2>  prev_color;
     bit<3>  queue_id;
+    bit<1>  is_dropped;
+    bit<1>  should_clone_e2e;
+    bit<19> saved_qdepth;
 }
 
 #endif

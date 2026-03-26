@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KBCS ObsCenter - Real-Time Dashboard & Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #090a0f;
+            --panel-bg: rgba(22, 27, 34, 0.7);
+            --neon-blue: #00e5ff;
+            --neon-green: #00e676;
+            --neon-red: #ff1744;
+            --neon-orange: #ff9100;
+            --text-primary: #ffffff;
+            --text-secondary: #8b949e;
+            --border-glow: rgba(0, 229, 255, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top right, rgba(0, 229, 255, 0.1) 0%, transparent 50%),
+                              radial-gradient(circle at bottom left, rgba(0, 230, 118, 0.05) 0%, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 230, 118, 0.1);
+            border: 1px solid var(--neon-green);
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(0, 230, 118, 0.2);
+        }
+
+        .status-badge::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--neon-green);
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 5px var(--neon-green);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .color-green { color: var(--neon-green); text-shadow: 0 0 10px rgba(0, 230, 118, 0.5); }
+        .color-yellow { color: var(--neon-orange); text-shadow: 0 0 10px rgba(255, 145, 0, 0.5); }
+        .color-red { color: var(--neon-red); text-shadow: 0 0 10px rgba(255, 23, 68, 0.5); }
+
+        /* REAL-TIME TOPOLOGY VISUALIZER STYLES */
+        .topology-panel {
+            grid-column: span 2;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, rgba(22, 27, 34, 0.9) 0%, #090a0f 100%);
+        }
+
+        .topo-node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: #1c2128;
+            border: 2px solid rgba(255,255,255,0.2);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 10;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            transition: all 0.3s ease;
+        }
+
+        .topo-node.switch {
+            border-radius: 12px;
+            width: 140px;
+            height: 100px;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            background: rgba(0, 229, 255, 0.05);
+        }
+
+        .node-label {
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        #node-h1 { left: 10%; top: 20%; border-color: var(--neon-red); }
+        #node-h2 { left: 10%; bottom: 20%; border-color: var(--neon-blue); }
+        #node-s1 { left: 45%; top: 50%; transform: translateY(-50%); }
+        #node-h3 { right: 10%; top: 50%; transform: translateY(-50%); border-color: var(--neon-green); }
+
+        canvas#particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .main-chart { height: 400px; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>KBCS Telemetry ObsCenter</h1>
+        <div class="status-badge" id="conn-status">LIVE MONITORING</div>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="panel">
+            <div class="panel-header">CUBIC Flow (Loss-Based)</div>
+            <div class="stat-value" id="cubic-score"><span class="color-green">--</span> <span class="stat-label">/ 100</span></div>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Aggressive TCP variant probing bandwidth.</p>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">BBR Flow (Model-Based)</div>
+            <div class="stat-value" id="bbr-score"><span class="color-green">--</span> <span class="stat-label">/ 100</span></div>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Pacing-based elegant TCP variant.</p>
+        </div>
+
+        <!-- THE TOPOLOGY VISUALIZER -->
+        <div class="panel topology-panel">
+            <div class="panel-header" style="position: absolute; top: 1.5rem; left: 1.5rem; z-index: 20;">Real-Time Topology Traffic Flow</div>
+            
+            <!-- Nodes -->
+            <div class="topo-node" id="node-h1">H1<div class="node-label">CUBIC</div></div>
+            <div class="topo-node" id="node-h2">H2<div class="node-label">BBR</div></div>
+            <div class="topo-node switch" id="node-s1">S1<div class="node-label">P4 KBCS Engine</div></div>
+            <div class="topo-node" id="node-h3">H3<div class="node-label">Server (Receiver)</div></div>
+
+            <!-- Canvas for drawing paths and packet animations -->
+            <canvas id="particleCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="panel main-chart">
+            <div class="panel-header">Real-Time Karma Degradation Dynamics</div>
+            <canvas id="karmaChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Setup Chart.js
+        const chartCtx = document.getElementById('karmaChart').getContext('2d');
+        const karmaChart = new Chart(chartCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'CUBIC (Aggressive)',
+                        data: [],
+                        borderColor: '#ff1744',
+                        backgroundColor: 'rgba(255, 23, 68, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'BBR (Model-based)',
+                        data: [],
+                        borderColor: '#00e5ff',
+                        backgroundColor: 'rgba(0, 229, 255, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 },
+                plugins: { legend: { labels: { color: '#c9d1d9' } } },
+                scales: {
+                    x: { ticks: { color: '#8b949e' } },
+                    y: { min: 0, max: 110, ticks: { color: '#8b949e' } }
+                }
+            }
+        });
+
+        // Initialize Topology Canvas
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let droppedParticles = [];
+        
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function getNodeCenter(id) {
+            const el = document.getElementById(id);
+            const parentUrl = el.parentElement.getBoundingClientRect();
+            const rect = el.getBoundingClientRect();
+            return {
+                x: rect.left - parentUrl.left + rect.width / 2,
+                y: rect.top - parentUrl.top + rect.height / 2
+            };
+        }
+
+        // Particle System
+        class Particle {
+            constructor(startX, startY, endX, endY, color, isDropped = false) {
+                this.x = startX;
+                this.y = startY;
+                this.endX = endX;
+                this.endY = endY;
+                this.color = color;
+                this.progress = 0;
+                this.speed = Math.random() * 0.01 + 0.015;
+                this.size = Math.random() * 3 + 3;
+                this.isDropped = isDropped;
+            }
+
+            update() {
+                this.progress += this.speed;
+                if (this.isDropped && this.progress > 0.5) return true; // Drops physically die mid-switch
+                return this.progress >= 1;
+            }
+
+            draw(ctx) {
+                const curX = this.x + (this.endX - this.x) * this.progress;
+                const curY = this.y + (this.endY - this.y) * this.progress;
+                
+                ctx.beginPath();
+                ctx.arc(curX, curY, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+            }
+        }
+
+        class DroppedExplosion {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = 2;
+                this.alpha = 1;
+            }
+            update() {
+                this.radius += 1;
+                this.alpha -= 0.05;
+                return this.alpha <= 0;
+            }
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 23, 68, ${this.alpha})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        let currCubicKarma = 100;
+        let currBbrKarma = 100;
+
+        function animateTopology() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const nH1 = getNodeCenter('node-h1');
+            const nH2 = getNodeCenter('node-h2');
+            const nS1 = getNodeCenter('node-s1');
+            const nH3 = getNodeCenter('node-h3');
+
+            // Draw link lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 0;
+            
+            ctx.beginPath(); ctx.moveTo(nH1.x, nH1.y); ctx.lineTo(nS1.x, nS1.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(nH2.x, nH2.y); ctx.lineTo(nS1.x, nS1.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(nS1.x, nS1.y); ctx.lineTo(nH3.x, nH3.y); ctx.stroke();
+
+            // Spawn CUBIC packets
+            if (Math.random() < 0.15) {
+                let isDropped = false;
+                if (currCubicKarma < 40 && Math.random() < 0.7) { isDropped = true; } // High drop rate inside S1 when RED
+                particles.push(new Particle(nH1.x, nH1.y, nS1.x, nS1.y, '#ff1744', false)); // H1 -> S1
+                particles.push(new Particle(nS1.x, nS1.y, nH3.x, nH3.y, '#ff1744', isDropped)); // S1 -> H3
+            }
+
+            // Spawn BBR packets (pacing smoothly)
+            if (Math.random() < 0.08) {
+                particles.push(new Particle(nH2.x, nH2.y, nS1.x, nS1.y, '#00e5ff', false));
+                particles.push(new Particle(nS1.x, nS1.y, nH3.x, nH3.y, '#00e5ff', false));
+            }
+
+            // Update & Draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                if (p.update()) {
+                    if (p.isDropped) droppedParticles.push(new DroppedExplosion(nS1.x + (Math.random()*40-20), nS1.y + (Math.random()*40-20), p.color));
+                    particles.splice(i, 1);
+                } else {
+                    p.draw(ctx);
+                }
+            }
+
+            // Draw Drop explosions
+            for (let i = droppedParticles.length - 1; i >= 0; i--) {
+                const exp = droppedParticles[i];
+                if (exp.update()) droppedParticles.splice(i, 1);
+                else exp.draw(ctx);
+            }
+
+            // Update S1 glowing status based on worst karma
+            const s1Color = (currCubicKarma < 40) ? 'rgba(255, 23, 68, 0.4)' : (currCubicKarma < 80 ? 'rgba(255, 145, 0, 0.4)' : 'rgba(0, 229, 255, 0.4)');
+            document.getElementById('node-s1').style.boxShadow = `0 0 30px ${s1Color}`;
+
+            requestAnimationFrame(animateTopology);
+        }
+        animateTopology();
+
+        // Fetch Data Loop
+        function getColorClass(score) {
+            if (score >= 80) return 'color-green';
+            if (score >= 40) return 'color-yellow';
+            return 'color-red';
+        }
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/api/data');
+                const result = await response.json();
+                
+                if (result.data.time && result.data.time.length > 0) {
+                    karmaChart.data.labels = result.data.time;
+                    karmaChart.data.datasets[0].data = result.data.cubic;
+                    karmaChart.data.datasets[1].data = result.data.bbr;
+                    karmaChart.update();
+
+                    currCubicKarma = result.data.cubic[result.data.cubic.length - 1];
+                    currBbrKarma = result.data.bbr[result.data.bbr.length - 1];
+                    
+                    document.getElementById('cubic-score').innerHTML = `<span class="${getColorClass(currCubicKarma)}">${currCubicKarma}</span> <span class="stat-label">/ 100</span>`;
+                    document.getElementById('bbr-score').innerHTML = `<span class="${getColorClass(currBbrKarma)}">${currBbrKarma}</span> <span class="stat-label">/ 100</span>`;
+                }
+            } catch (err) {}
+        }
+
+        setInterval(updateDashboard, 500);
+    </script>
+</body>
+</html>

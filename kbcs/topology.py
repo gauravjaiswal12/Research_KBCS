@@ -7,216 +7,300 @@ import argparse
 from time import sleep
 import os
 import json
-
 import sys
+
 sys.path.append('utils')
 from p4_mininet import P4Switch, P4Host
 
-
 class KBCSSwitch(P4Switch):
     """P4Switch subclass that enables priority queues in simple_switch."""
-    def __init__(self, name, priority_queues=0, **kwargs):
+    def __init__(self, name, priority_queues=3, **kwargs):
         P4Switch.__init__(self, name, **kwargs)
         self.priority_queues = priority_queues
 
     def start(self, controllers):
-        """Start with --priority-queues injected into the command."""
         if self.priority_queues > 0:
-            # Temporarily modify sw_path to include the priority queues flag
-            original_sw_path = self.sw_path
-            self.sw_path = self.sw_path + ' --priority-queues %d' % self.priority_queues
+            original_json_path = self.json_path
+            self.json_path = self.json_path + ' -- --priority-queues %d' % self.priority_queues
             P4Switch.start(self, controllers)
-            self.sw_path = original_sw_path
+            self.json_path = original_json_path
         else:
             P4Switch.start(self, controllers)
 
-
 class KBCSTopo(Topo):
-    def __init__(self, sw_path, json_path, priority_queues=0, **opts):
+    def __init__(self, sw_path, json_path, priority_queues=0, num_flows=2, **opts):
         Topo.__init__(self, **opts)
+        self.num_flows = num_flows
 
         switch = self.addSwitch('s1',
-                                sw_path = sw_path,
-                                json_path = json_path,
-                                thrift_port = 9090,
-                                priority_queues = priority_queues,
-                                cls = KBCSSwitch)
+                                sw_path=sw_path,
+                                json_path=json_path,
+                                thrift_port=9090,
+                                priority_queues=priority_queues,
+                                cls=KBCSSwitch)
 
-        h1 = self.addHost('h1', ip='10.0.0.1/24', mac='00:00:00:00:01:01')
-        h2 = self.addHost('h2', ip='10.0.0.2/24', mac='00:00:00:00:02:02')
-        h3 = self.addHost('h3', ip='10.0.0.3/24', mac='00:00:00:00:03:03')
+        self.senders = []
+        for i in range(1, num_flows + 1):
+            h = self.addHost('h%d' % i, ip='10.0.0.%d/24' % i, mac='00:00:00:00:%02x:%02x' % (1, i))
+            self.senders.append(h)
+            self.addLink(h, switch, port2=i, cls=TCLink, bw=100)
 
-        self.addLink(h1, switch, port2=1, cls=TCLink, bw=100)
-        self.addLink(h2, switch, port2=2, cls=TCLink, bw=100)
-        self.addLink(h3, switch, port2=3, cls=TCLink, bw=10, delay='5ms', max_queue_size=200)
+        # Server
+        server_idx = num_flows + 1
+        server = self.addHost('h_server', ip='10.0.0.%d/24' % server_idx, mac='00:00:00:00:03:03')
+        # NO RATE LIMIT HERE — let BMv2 handle it natively!
+        self.addLink(server, switch, port2=server_idx, cls=TCLink, bw=100, delay='5ms')
+        
+        # Collector
+        coll_idx = num_flows + 2
+        collector = self.addHost('collector', ip='10.0.0.%d/24' % coll_idx, mac='00:00:00:00:04:04')
+        self.addLink(collector, switch, port2=coll_idx, cls=TCLink, bw=1000)
 
+def configure_hosts(net, num_flows, ccas):
+    server_ip = '10.0.0.%d' % (num_flows + 1)
+    server_mac = '00:00:00:00:03:03'
+    server = net.get('h_server')
+    collector = net.get('collector')
 
-def configure_hosts(net):
-    h1, h2, h3 = net.get('h1'), net.get('h2'), net.get('h3')
+    senders = [net.get('h%d' % i) for i in range(1, num_flows + 1)]
+    all_hosts = senders + [server, collector]
 
-    for h in [h1, h2, h3]:
+    for h in all_hosts:
         h.cmd('sysctl -w net.ipv6.conf.all.disable_ipv6=1')
         h.cmd('sysctl -w net.ipv6.conf.default.disable_ipv6=1')
         h.cmd('sysctl -w net.ipv6.conf.lo.disable_ipv6=1')
+        h.cmd('sysctl -w net.ipv4.tcp_ecn=1')  # Enable ECN for KBCS-AQM
 
-    h1.cmd('arp -s 10.0.0.2 00:00:00:00:02:02')
-    h1.cmd('arp -s 10.0.0.3 00:00:00:00:03:03')
-    h2.cmd('arp -s 10.0.0.1 00:00:00:00:01:01')
-    h2.cmd('arp -s 10.0.0.3 00:00:00:00:03:03')
-    h3.cmd('arp -s 10.0.0.1 00:00:00:00:01:01')
-    h3.cmd('arp -s 10.0.0.2 00:00:00:00:02:02')
+    # Load ALL needed TCP CCA kernel modules with explicit error checking
+    cca_list = [c.strip() for c in ccas.split(',')]
+    info("*** Loading CCA kernel modules:\n")
+    for cca in set(cca_list):
+        # Try loading the module
+        result = os.system(f'modprobe tcp_{cca}')
+        if result != 0:
+            info(f"    Warning: Failed to load tcp_{cca}, trying alternative...\n")
+        # Verify it's available
+        check = os.popen('cat /proc/sys/net/ipv4/tcp_available_congestion_control').read()
+        if cca in check:
+            info(f"    tcp_{cca}: loaded successfully\n")
+        else:
+            info(f"    tcp_{cca}: NOT available\n")
 
-    h1.cmd('sysctl -w net.ipv4.tcp_congestion_control=cubic')
-    h2.cmd('modprobe tcp_bbr 2>/dev/null; sysctl -w net.ipv4.tcp_congestion_control=bbr')
-    h3.cmd('sysctl -w net.ipv4.tcp_congestion_control=reno')
+    # Set allowed CCAs globally - use all available ones
+    available = os.popen('cat /proc/sys/net/ipv4/tcp_available_congestion_control').read().strip()
+    os.system(f'echo "{available}" > /proc/sys/net/ipv4/tcp_allowed_congestion_control')
+    info(f"*** Available CCAs: {available}\n")
 
     info("*** Congestion Control configured:\n")
-    info("    h1 (CUBIC): %s" % h1.cmd('sysctl net.ipv4.tcp_congestion_control').strip() + "\n")
-    info("    h2 (BBR):   %s" % h2.cmd('sysctl net.ipv4.tcp_congestion_control').strip() + "\n")
-    return h1, h2, h3
+    for i, h in enumerate(senders):
+        cca = cca_list[i % len(cca_list)]
+        # Set CCA for this host
+        h.cmd(f'sysctl -w net.ipv4.tcp_congestion_control={cca}')
+        raw = h.cmd(f'sysctl net.ipv4.tcp_congestion_control')
+        actual = raw.strip().split('=')[-1].strip() if '=' in raw else raw.strip()
+        h.cmd('arp -s %s %s' % (server_ip, server_mac))
+        status = "OK" if actual.lower() == cca.lower() else "FALLBACK"
+        info(f"    {h.name} ({cca.upper()}): actual={actual} [{status}]\n")
 
+    server.cmd('sysctl -w net.ipv4.tcp_congestion_control=reno')
+    for i, h in enumerate(senders):
+        server.cmd('arp -s 10.0.0.%d 00:00:00:00:%02x:%02x' % (i + 1, 1, i + 1))
+        
+    return senders, server, collector
 
-def install_forwarding_rules():
-    print("Populating forwarding rules...")
-    os.system('echo "table_add MyIngress.ipv4_lpm MyIngress.ipv4_forward 10.0.0.1/32 => 00:00:00:00:01:01 1" | simple_switch_CLI --thrift-port 9090')
-    os.system('echo "table_add MyIngress.ipv4_lpm MyIngress.ipv4_forward 10.0.0.2/32 => 00:00:00:00:02:02 2" | simple_switch_CLI --thrift-port 9090')
-    os.system('echo "table_add MyIngress.ipv4_lpm MyIngress.ipv4_forward 10.0.0.3/32 => 00:00:00:00:03:03 3" | simple_switch_CLI --thrift-port 9090')
+def install_forwarding_rules(num_flows):
+    print("Populating forwarding rules and native BMv2 settings...")
+    cmds = []
+    
+    # Forwarding rules for senders and exact flow IDs for telemetry
+    for i in range(1, num_flows + 1):
+        cmds.append(f'table_add MyIngress.ipv4_lpm MyIngress.ipv4_forward 10.0.0.{i}/32 => 00:00:00:00:01:{i:02x} {i}')
+        cmds.append(f'table_add MyIngress.flow_id_exact MyIngress.set_flow_id 10.0.0.{i} => {i}')
+    
+    # Forwarding rule for server
+    server_idx = num_flows + 1
+    cmds.append(f'table_add MyIngress.ipv4_lpm MyIngress.ipv4_forward 10.0.0.{server_idx}/32 => 00:00:00:00:03:03 {server_idx}')
+    
+    # Mirroring to collector
+    coll_idx = num_flows + 2
+    cmds.append(f'mirroring_add 4 {coll_idx}')
+    
+    # TRUE BMv2 BOTTLENECK ENFORCEMENT
+    # 833 packets/sec * 1500B = ~10 Mbps limit on server egress port
+    cmds.append(f'set_queue_rate 833 {server_idx}')
+    # KBCS FIX: Increased buffer from 10 to 16 packets for 2x BDP headroom
+    # At 10 Mbps: 16 pkts * 1500B * 8 / 10M = 19ms max queuing delay
+    # Provides headroom for BBR probing while still maintaining low latency
+    cmds.append(f'set_queue_depth 16 {server_idx}')
+    
+    # DYNAMIC FAIR_BYTES CALCULATION (updated for 15ms window)
+    # 10 Mbps = 1,250,000 bytes/sec. Window = 15ms = 66.67 per sec.
+    # fair_bytes = (1,250,000 / 66.67) / num_flows = 18,750 / num_flows
+    # KBCS: 1.5x provides balance between differentiation and utilization
+    windows_per_sec = 1000 / 15  # 66.67 windows per second
+    fair_bytes = int((1250000 / windows_per_sec) / num_flows * 1.5)  # 1.5x balance
+    
+    # Write to reg_fair_bytes slot 0
+    cmds.append(f'register_write reg_fair_bytes 0 {fair_bytes}')
+    
+    # Execute commands
+    for cmd in cmds:
+        os.system(f'echo "{cmd}" | simple_switch_CLI --thrift-port 9090 > /dev/null 2>&1')
 
+def run_iperf_test(net, num_flows, ccas, duration=30):
+    senders = [net.get('h%d' % i) for i in range(1, num_flows + 1)]
+    server = net.get('h_server')
+    collector = net.get('collector')
+    server_ip = '10.0.0.%d' % (num_flows + 1)
+    
+    cca_list = [c.strip() for c in ccas.split(',')]
+    
+    info(f"\n*** Starting iperf3 traffic test (duration={duration}s, flows={num_flows})\n")
+    info("    Bottleneck: Native BMv2 queue on server port (10 Mbps)\n\n")
 
-def run_iperf_test(net, duration=30):
-    """Run iperf3 traffic test: h1(CUBIC) and h2(BBR) both send to h3."""
-    h1, h2, h3 = net.get('h1'), net.get('h2'), net.get('h3')
-
-    r1_file = '/tmp/kbcs_h1_cubic.json'
-    r2_file = '/tmp/kbcs_h2_bbr.json'
-    os.system('rm -f %s %s' % (r1_file, r2_file))
-
-    info("\n*** Starting iperf3 traffic test (duration=%ds)\n" % duration)
-    info("    h1 (CUBIC) -> h3  &  h2 (BBR) -> h3\n")
-    info("    Bottleneck: 10 Mbps link to h3\n\n")
-
-    # Verify iperf3 exists
-    info("    iperf3 path: %s\n" % h1.cmd('which iperf3').strip())
-
-    # Start iperf3 servers on h3
-    h3.cmd('killall iperf3 2>/dev/null')
+    server.cmd('killall iperf3 2>/dev/null')
     sleep(1)
-    h3.cmd('iperf3 -s -p 5201 -D')
-    h3.cmd('iperf3 -s -p 5202 -D')
+    
+    # Start N servers using bash backgrounding instead of -D to prevent crashes
+    for i in range(num_flows):
+        server.cmd(f'iperf3 -s -p {6201 + i} > /tmp/iperf_s{i}.log 2>&1 &')
     sleep(2)
-    info("    Servers: %s\n" % h3.cmd('pgrep -a iperf3').strip().replace('\n', ' | '))
 
-    # Run h1 and h2 clients using sendCmd for true parallel execution
-    info("\n*** Starting clients simultaneously...\n")
-    h1.sendCmd('iperf3 -c 10.0.0.3 -p 5201 -t %d -J > %s 2>&1' % (duration, r1_file))
-    h2.sendCmd('iperf3 -c 10.0.0.3 -p 5202 -t %d -J > %s 2>&1' % (duration, r2_file))
+    # Start metrics exporter (passing num_flows and CCAs)
+    os.system(f'python3 metrics_exporter.py {duration} {num_flows} {ccas} &')
+    
+    # Start RL Adaptive Fairness Controller
+    os.system(f'python3 rl_controller.py {duration} {num_flows} > /tmp/rl.log 2>&1 &')
+    
+    collector.cmd('killall tcpdump 2>/dev/null')
+    collector.cmd('rm -f /tmp/collector.pcap')
+    collector.cmd('tcpdump -U -n -i eth0 -w /tmp/collector.pcap &')
+    
+    info("\n*** Starting clients with synchronized barrier...\n")
 
-    info("*** Waiting %d seconds for tests to complete...\n" % (duration + 5))
-    sleep(duration + 5)
+    # KBCS FIX: Barrier synchronization to prevent CUBIC first-mover advantage
+    sync_file = '/tmp/kbcs_sync'
+    os.system(f'rm -f {sync_file}')
 
-    # waitOutput() is REQUIRED after sendCmd to reset the host shell state
-    try:
-        h1.waitOutput(verbose=False)
-    except:
-        pass
-    try:
-        h2.waitOutput(verbose=False)
-    except:
-        pass
-    sleep(1)
+    res_files = []
+    for i, h in enumerate(senders):
+        r_file = f'/tmp/res_h{i+1}.json'
+        err_file = f'/tmp/err_h{i+1}.txt'
+        os.system(f'rm -f {r_file} {err_file}')
+        cca = cca_list[i % len(cca_list)]
+        res_files.append((r_file, h.name, cca))
+        # Wait for sync file before starting - ensures all flows start together
+        cmd = f'while [ ! -f {sync_file} ]; do sleep 0.01; done; ' \
+              f'iperf3 -c {server_ip} -p {6201 + i} -t {duration} --congestion {cca} -J > {r_file} 2> {err_file}'
+        h.sendCmd(cmd)
 
-    # Check file sizes
-    r1_size = os.path.getsize(r1_file) if os.path.exists(r1_file) else 0
-    r2_size = os.path.getsize(r2_file) if os.path.exists(r2_file) else 0
-    info("    Result files: h1=%d bytes, h2=%d bytes\n" % (r1_size, r2_size))
+    # Wait for all clients to be ready, then trigger synchronized start
+    sleep(0.5)
+    os.system(f'touch {sync_file}')
+    info("    All flows started simultaneously!\n")
 
-    # ===== PARSE RESULTS =====
-    info("\n*** ===== TRAFFIC TEST RESULTS ===== ***\n")
-    t1, t2, r1_retx, r2_retx = 0.0, 0.0, 'N/A', 'N/A'
+    info("*** Waiting for tests to complete...\n")
+    sleep(duration + 10)
 
-    for fpath, label, is_h1 in [(r1_file, 'h1 (CUBIC)', True), (r2_file, 'h2 (BBR)', False)]:
+    for h in senders:
         try:
-            with open(fpath, 'r') as f:
-                content = f.read().strip()
-            if not content:
-                info("    %s: Result file is EMPTY\n" % label)
-                continue
-            data = json.loads(content)
-            if 'error' in data:
-                info("    %s: iperf3 error: %s\n" % (label, data['error']))
-                continue
-            mbps = data['end']['sum_sent']['bits_per_second'] / 1e6
-            retx = data['end']['sum_sent'].get('retransmits', 'N/A')
-            info("    %s: %.2f Mbps (retransmits: %s)\n" % (label, mbps, retx))
-            if is_h1:
-                t1, r1_retx = mbps, retx
-            else:
-                t2, r2_retx = mbps, retx
-        except Exception as e:
-            info("    %s: Parse error (%s)\n" % (label, str(e)))
+            h.waitOutput(verbose=False)
+        except:
+            pass
+    sleep(2)
 
-    # Jain's Fairness Index
-    if t1 > 0 or t2 > 0:
-        jain = ((t1 + t2) ** 2) / (2 * (t1**2 + t2**2))
-        info("\n    Jain's Fairness Index: %.4f\n" % jain)
-        info("    (1.0 = perfectly fair, 0.5 = completely unfair)\n")
+    server.cmd('killall iperf3 2>/dev/null')
+
+    # PARSE RESULTS
+    info("\n*** ===== TRAFFIC TEST RESULTS ===== ***\n")
+    throughputs = []
+    retransmits = []
+    
+    for r_file, h_name, cca in res_files:
+        try:
+            with open(r_file, 'r') as f:
+                data = json.loads(f.read().strip())
+                mbps = data['end']['sum_sent']['bits_per_second'] / 1e6
+                retx = data['end']['sum_sent'].get('retransmits', 'N/A')
+                throughputs.append(mbps)
+                retransmits.append(retx)
+                info(f"    {h_name} ({cca.upper()}): {mbps:.2f} Mbps (retransmits: {retx})\n")
+        except Exception:
+            info(f"    {h_name} ({cca.upper()}): Parse error or empty file\n")
+            throughputs.append(0)
+            retransmits.append('N/A')
+
+    # JFI
+    if sum(throughputs) > 0:
+        jain = (sum(throughputs) ** 2) / (len(throughputs) * sum(x**2 for x in throughputs))
+        info(f"\n    Jain's Fairness Index: {jain:.4f}\n")
     else:
         jain = 0
-        info("\n    ERROR: No throughput data collected.\n")
-        info("    Debug: Check if iperf3 clients could connect to servers.\n")
 
-    # Save summary
     os.makedirs('results', exist_ok=True)
-    summary = {'cubic_mbps': round(t1, 2), 'bbr_mbps': round(t2, 2),
-               'cubic_retransmits': r1_retx, 'bbr_retransmits': r2_retx,
-               'jain_index': round(jain, 4), 'duration': duration}
+    summary = {
+        'num_flows': num_flows,
+        'jain_index': round(jain, 4),
+        'duration': duration,
+        'flows': []
+    }
+    
+    for i in range(num_flows):
+        summary['flows'].append({
+            'name': res_files[i][1],
+            'cca': res_files[i][2],
+            'mbps': round(throughputs[i], 2),
+            'retransmits': retransmits[i]
+        })
+        
+    # Legacy compat for old scripts
+    if num_flows >= 2:
+        summary['cubic_mbps'] = round(throughputs[0], 2)
+        summary['bbr_mbps'] = round(throughputs[1], 2)
+        summary['cubic_retransmits'] = retransmits[0]
+        summary['bbr_retransmits'] = retransmits[1]
+
     with open('results/last_test.json', 'w') as f:
         json.dump(summary, f, indent=2)
 
-    info("\n*** ===== TEST COMPLETE ===== ***\n")
-    h3.cmd('killall iperf3 2>/dev/null')
+    info("\n*** Pushing Hardware INT Traces to JSON...\n")
+    node_ips = ','.join([f'10.0.0.{i+1}:{cca_list[i % len(cca_list)]}' for i in range(num_flows)])
+    collector.cmd(f'python3 int_collector.py /tmp/collector.pcap {node_ips} > /tmp/int_collector.log 2>&1')
+    
     return summary
 
-
 def main():
-    parser = argparse.ArgumentParser(description='KBCS Mininet topology')
-    parser.add_argument('--behavioral-exe', help='Path to behavioral executable',
-                        type=str, action="store", required=True)
-    parser.add_argument('--json', help='Path to JSON config file',
-                        type=str, action="store", required=True)
-    parser.add_argument('--test-only', help='Run pingall and exit',
-                        action='store_true')
-    parser.add_argument('--traffic', help='Run iperf3 traffic test',
-                        action='store_true')
-    parser.add_argument('--duration', help='Traffic test duration (seconds)',
-                        type=int, default=30)
-    parser.add_argument('--priority-queues', help='Number of priority queues',
-                        type=int, default=0)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--behavioral-exe', type=str, required=True)
+    parser.add_argument('--json', type=str, required=True)
+    parser.add_argument('--test-only', action='store_true')
+    parser.add_argument('--traffic', action='store_true')
+    parser.add_argument('--duration', type=int, default=30)
+    parser.add_argument('--priority-queues', type=int, default=3)
+    parser.add_argument('--num-flows', type=int, default=2)
+    parser.add_argument('--ccas', type=str, default='cubic,bbr')
     args = parser.parse_args()
 
-    pq = args.priority_queues
-    info("*** Priority queues: %s\n" % (str(pq) if pq > 0 else 'DISABLED (FIFO)'))
+    # Build CCAs up to num-flows if shorter
+    cca_list = [c.strip() for c in args.ccas.split(',')]
+    if len(cca_list) < args.num_flows:
+        args.ccas = ','.join(cca_list * (args.num_flows // len(cca_list) + 1))
 
-    topo = KBCSTopo(args.behavioral_exe, args.json, priority_queues=pq)
+    topo = KBCSTopo(args.behavioral_exe, args.json, priority_queues=args.priority_queues, num_flows=args.num_flows)
     net = Mininet(topo=topo, host=P4Host, switch=KBCSSwitch, controller=None, link=TCLink)
     net.start()
 
-    h1, h2, h3 = configure_hosts(net)
-    install_forwarding_rules()
+    configure_hosts(net, args.num_flows, args.ccas)
+    install_forwarding_rules(args.num_flows)
     sleep(1)
 
     if args.test_only:
-        print("Running automated pingall test...")
         net.pingAll()
     elif args.traffic:
-        info("*** Quick connectivity check...\n")
-        net.pingAll()
-        run_iperf_test(net, duration=args.duration)
+        run_iperf_test(net, args.num_flows, args.ccas, duration=args.duration)
     else:
         CLI(net)
-
     net.stop()
-
 
 if __name__ == '__main__':
     setLogLevel('info')

@@ -1,0 +1,35 @@
+{
+  "num_flows": 4,
+  "jain_index": 0.9989,
+  "duration": 30,
+  "flows": [
+    {
+      "name": "h1",
+      "cca": "cubic",
+      "mbps": 0.73,
+      "retransmits": 0
+    },
+    {
+      "name": "h2",
+      "cca": "reno",
+      "mbps": 0.77,
+      "retransmits": 0
+    },
+    {
+      "name": "h3",
+      "cca": "illinois",
+      "mbps": 0.73,
+      "retransmits": 0
+    },
+    {
+      "name": "h4",
+      "cca": "htcp",
+      "mbps": 0.7,
+      "retransmits": 0
+    }
+  ],
+  "cubic_mbps": 0.73,
+  "bbr_mbps": 0.77,
+  "cubic_retransmits": 0,
+  "bbr_retransmits": 0
+}
