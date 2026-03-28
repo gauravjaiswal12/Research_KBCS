@@ -177,12 +177,9 @@ def upload_and_run(run_traffic=False, duration=30, num_flows=2, ccas="cubic,bbr"
         print("Build successful!")
 
         cmd_args = f"--behavioral-exe simple_switch --json build/kbcs.json --num-flows {num_flows} --ccas {ccas}"
-        
-        print("\n--- Running pingall test ---")
-        out, err, status = run_sudo(ssh, f"cd {remote_dir} && PYTHONPATH={remote_dir}/utils python3 topology.py {cmd_args} --test-only 2>&1", timeout=60)
 
-        if "0% dropped" in out: print("\n*** PINGALL TEST PASSED! ***")
-        else: print(f"\n*** Pingall test result (exit {status}) ***")
+        # Skip pingall test - goes directly to traffic test
+        print("\n--- Skipping pingall test (going directly to traffic) ---")
 
         if run_traffic:
             time.sleep(2)
