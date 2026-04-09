@@ -1,0 +1,844 @@
+    INFO: 2026-04-02 14:30:01,120:               log.py:   20: Logging to E:\Research Methodology\Project-Implementation\mdpdf.log
+   DEBUG: 2026-04-02 14:30:01,121:               cli.py:  103: e:\Research Methodology\Project-Implementation\METHODOLOGY.md
+    INFO: 2026-04-02 14:30:01,123:         converter.py:   14: e:\Research Methodology\Project-Implementation\METHODOLOGY.md
+   DEBUG: 2026-04-02 14:30:01,161:      pdf_renderer.py:  470: printSegment: KBCS: Karma-Based Congestion Signaling — System Methodology
+   DEBUG: 2026-04-02 14:30:01,191:      pdf_renderer.py:  470: printSegment: 1. Problem Statement
+   DEBUG: 2026-04-02 14:30:01,193:      pdf_renderer.py:  470: printSegment: 1.1 The Inter-CCA Fairness Problem
+   DEBUG: 2026-04-02 14:30:01,207:      pdf_renderer.py:  470: printSegment: Modern networks carry traffic from applications that use different Congestion Control Algorithms (CCAs). These
+   DEBUG: 2026-04-02 14:30:01,211:      pdf_renderer.py:  470: printSegment: CCAs respond to congestion in fundamentally different ways:
+   DEBUG: 2026-04-02 14:30:01,214:      pdf_renderer.py:  470: printSegment: | CCA Category | Examples | How They React to Congestion |
+   DEBUG: 2026-04-02 14:30:01,215:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,216:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 14:30:01,217:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,223:      pdf_renderer.py:  470: printSegment: | Loss-based | CUBIC, Reno, NewReno |
+   DEBUG: 2026-04-02 14:30:01,225:      pdf_renderer.py:  470: printSegment: Reduce sending rate when packets are dropped |
+   DEBUG: 2026-04-02 14:30:01,226:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,230:      pdf_renderer.py:  470: printSegment: | Delay-based | Vegas, Copa | Reduce sending rate when round-trip
+   DEBUG: 2026-04-02 14:30:01,232:      pdf_renderer.py:  470: printSegment: time increases |
+   DEBUG: 2026-04-02 14:30:01,233:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,236:      pdf_renderer.py:  470: printSegment: | Hybrid | Illinois, Westwood | Use both packet loss and delay signals |
+   DEBUG: 2026-04-02 14:30:01,237:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,242:      pdf_renderer.py:  470: printSegment: | Model-based | BBR, BBRv2
+   DEBUG: 2026-04-02 14:30:01,244:      pdf_renderer.py:  470: printSegment: | Estimate available bandwidth; largely ignore drops |
+   DEBUG: 2026-04-02 14:30:01,261:      pdf_renderer.py:  470: printSegment: When these different CCAs share a bottleneck link, severe unfairness arises. Aggressive CCAs (CUBIC, BBR)
+   DEBUG: 2026-04-02 14:30:01,265:      pdf_renderer.py:  470: printSegment: consume the majority of bandwidth while cooperative CCAs (Vegas) get starved.
+   DEBUG: 2026-04-02 14:30:01,269:      pdf_renderer.py:  470: printSegment: Quantified evidence (CCQM, Ma et al. 2026):
+   DEBUG: 2026-04-02 14:30:01,272:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:01,276:      pdf_renderer.py:  470: printSegment: CUBIC vs Vegas → Jain
+   DEBUG: 2026-04-02 14:30:01,301:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:01,303:      pdf_renderer.py:  470: printSegment: s Fairness Index (JFI) = 
+   DEBUG: 2026-04-02 14:30:01,304:      pdf_renderer.py:  470: printSegment: 0.69
+   DEBUG: 2026-04-02 14:30:01,305:      pdf_renderer.py:  470: printSegment:  (severe unfairness)
+   DEBUG: 2026-04-02 14:30:01,307:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:01,308:      pdf_renderer.py:  470: printSegment: CUBIC vs BBR → JFI = 
+   DEBUG: 2026-04-02 14:30:01,310:      pdf_renderer.py:  470: printSegment: 0.50
+   DEBUG: 2026-04-02 14:30:01,312:      pdf_renderer.py:  470: printSegment:  (near-total starvation of one flow)
+   DEBUG: 2026-04-02 14:30:01,313:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:01,315:      pdf_renderer.py:  470: printSegment: Same CCA competing → JFI ≈ 
+   DEBUG: 2026-04-02 14:30:01,340:      pdf_renderer.py:  470: printSegment: 0.95–1.0
+   DEBUG: 2026-04-02 14:30:01,363:      pdf_renderer.py:  470: printSegment:  (fair)
+   DEBUG: 2026-04-02 14:30:01,365:      pdf_renderer.py:  470: printSegment: 1.2 Limitations of Existing Solutions
+   DEBUG: 2026-04-02 14:30:01,368:      pdf_renderer.py:  470: printSegment: Traditional AQM (RED, CoDel, PIE):
+   DEBUG: 2026-04-02 14:30:01,369:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,431:      pdf_renderer.py:  470: printSegment: These drop packets based on queue depth or sojourn time, treating every
+   DEBUG: 2026-04-02 14:30:01,463:      pdf_renderer.py:  470: printSegment: flow identically. A cooperative Vegas flow and an aggressive CUBIC flow both face the same random drop
+   DEBUG: 2026-04-02 14:30:01,473:      pdf_renderer.py:  470: printSegment: probability. This worsens unfairness because Vegas, which is already self-throttling, gets penalized alongside the
+   DEBUG: 2026-04-02 14:30:01,476:      pdf_renderer.py:  470: printSegment: aggressive flow that is causing the congestion.
+   DEBUG: 2026-04-02 14:30:01,479:      pdf_renderer.py:  470: printSegment: P4air (Turkovic 
+   DEBUG: 2026-04-02 14:30:01,480:      pdf_renderer.py:  470: printSegment: &
+   DEBUG: 2026-04-02 14:30:01,483:      pdf_renderer.py:  470: printSegment:  Kuipers, 2020):
+   DEBUG: 2026-04-02 14:30:01,485:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,531:      pdf_renderer.py:  470: printSegment: P4air uses P4 programmable switches to continuously monitor per-flow
+   DEBUG: 2026-04-02 14:30:01,553:      pdf_renderer.py:  470: printSegment: properties and fingerprint CCA behavior. It separates flows into groups and dynamically reallocates queues based on
+   DEBUG: 2026-04-02 14:30:01,556:      pdf_renderer.py:  470: printSegment: flow count. P4air proved that in-network fairness enforcement is viable at line-rate. However, two limitations exist:
+   DEBUG: 2026-04-02 14:30:01,557:      pdf_renderer.py:  470: printSegment:  1 
+   DEBUG: 2026-04-02 14:30:01,558:      pdf_renderer.py:  470: printSegment: No recovery mechanism
+   DEBUG: 2026-04-02 14:30:01,566:      pdf_renderer.py:  470: printSegment:  — once a flow is classified as aggressive, it stays penalized indefinitely,
+   DEBUG: 2026-04-02 14:30:01,568:      pdf_renderer.py:  470: printSegment: leading to permanent starvation in long-lived flows.
+   DEBUG: 2026-04-02 14:30:01,569:      pdf_renderer.py:  470: printSegment:  2 
+   DEBUG: 2026-04-02 14:30:01,570:      pdf_renderer.py:  470: printSegment: Static thresholds
+   DEBUG: 2026-04-02 14:30:01,575:      pdf_renderer.py:  470: printSegment:  — if network conditions change (flows join or leave), the fingerprinting parameters
+   DEBUG: 2026-04-02 14:30:01,577:      pdf_renderer.py:  470: printSegment: do not adapt.
+   DEBUG: 2026-04-02 14:30:01,578:      pdf_renderer.py:  470: printSegment: CCQM (Ma et al., 2026):
+   DEBUG: 2026-04-02 14:30:01,580:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,626:      pdf_renderer.py:  470: printSegment: CCQM identifies the CCA type of each flow using a Binary Decision Tree by analyzing
+   DEBUG: 2026-04-02 14:30:01,646:      pdf_renderer.py:  470: printSegment: observable traffic features (inter-arrival times, throughput patterns). It then separates flows into dedicated queues by
+   DEBUG: 2026-04-02 14:30:01,650:      pdf_renderer.py:  470: printSegment: CCA category (loss-based, delay-based, hybrid, model-based, short). This achieves 63% fairness improvement.
+   DEBUG: 2026-04-02 14:30:01,653:      pdf_renderer.py:  470: printSegment: However:
+   DEBUG: 2026-04-02 14:30:01,655:      pdf_renderer.py:  470: printSegment:  1 
+   DEBUG: 2026-04-02 14:30:01,657:      pdf_renderer.py:  470: printSegment: Static queue boundaries
+   DEBUG: 2026-04-02 14:30:01,660:      pdf_renderer.py:  470: printSegment:  — the thresholds for classification and queue mapping are fixed at
+   DEBUG: 2026-04-02 14:30:01,662:      pdf_renderer.py:  470: printSegment: configuration time.
+   DEBUG: 2026-04-02 14:30:01,664:      pdf_renderer.py:  470: printSegment:  2 
+   DEBUG: 2026-04-02 14:30:01,666:      pdf_renderer.py:  470: printSegment: No per-flow reputation
+   DEBUG: 2026-04-02 14:30:01,680:      pdf_renderer.py:  470: printSegment:  — within each queue, all flows of the same CCA type are treated equally
+   DEBUG: 2026-04-02 14:30:01,682:      pdf_renderer.py:  470: printSegment: regardless of whether an individual flow is behaving fairly or not.
+   DEBUG: 2026-04-02 14:30:01,685:      pdf_renderer.py:  470: printSegment: PFQ (Wang et al., 2026):
+   DEBUG: 2026-04-02 14:30:01,686:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,695:      pdf_renderer.py:  470: printSegment: PFQ takes a proactive approach to buffer management. Instead of waiting for congestion
+   DEBUG: 2026-04-02 14:30:01,698:      pdf_renderer.py:  470: printSegment: to happen and then reacting (like RED), PFQ:
+   DEBUG: 2026-04-02 14:30:01,701:      pdf_renderer.py:  470: printSegment:  1 
+   DEBUG: 2026-04-02 14:30:01,703:      pdf_renderer.py:  470: printSegment: Reserves buffer space
+   DEBUG: 2026-04-02 14:30:01,706:      pdf_renderer.py:  470: printSegment:  for potential new flow arrivals (proactive reservation).
+   DEBUG: 2026-04-02 14:30:01,708:      pdf_renderer.py:  470: printSegment:  2 
+   DEBUG: 2026-04-02 14:30:01,711:      pdf_renderer.py:  470: printSegment: Recycles buffer
+   DEBUG: 2026-04-02 14:30:01,715:      pdf_renderer.py:  470: printSegment:  from flows that are under-utilizing their allocation and redistributes it to active
+   DEBUG: 2026-04-02 14:30:01,718:      pdf_renderer.py:  470: printSegment: flows.
+   DEBUG: 2026-04-02 14:30:01,720:      pdf_renderer.py:  470: printSegment:  3 
+   DEBUG: 2026-04-02 14:30:01,723:      pdf_renderer.py:  470: printSegment: Periodically remaps
+   DEBUG: 2026-04-02 14:30:01,729:      pdf_renderer.py:  470: printSegment:  flows to physical queues based on forwarded packet counts, balancing load
+   DEBUG: 2026-04-02 14:30:01,731:      pdf_renderer.py:  470: printSegment: across available queues.
+   DEBUG: 2026-04-02 14:30:01,732:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,755:      pdf_renderer.py:  470: printSegment: This reduces packet drop rates by 74.3%. However, PFQ has no notion of
+   DEBUG: 2026-04-02 14:30:01,759:      pdf_renderer.py:  470: printSegment: reputation or fairness history — it treats all flows within their buffer allocation identically.
+   DEBUG: 2026-04-02 14:30:01,761:      pdf_renderer.py:  470: printSegment: HINT (Sacco et al., 2023):
+   DEBUG: 2026-04-02 14:30:01,763:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,848:      pdf_renderer.py:  470: printSegment: HINT uses P4 switches to embed real-time telemetry data (processing delay, queue
+   DEBUG: 2026-04-02 14:30:01,895:      pdf_renderer.py:  470: printSegment: occupancy) directly into packet headers using In-Band Network Telemetry (INT). This data is extracted at the
+   DEBUG: 2026-04-02 14:30:01,910:      pdf_renderer.py:  470: printSegment: receiving end-host and used by the CCA to make better-informed rate decisions. HINT demonstrated that P4-driven
+   DEBUG: 2026-04-02 14:30:01,914:      pdf_renderer.py:  470: printSegment: telemetry can meaningfully improve congestion control accuracy with minimal overhead.
+   DEBUG: 2026-04-02 14:30:01,915:      pdf_renderer.py:  470: printSegment: 1.3 The KBCS Proposition
+   DEBUG: 2026-04-02 14:30:01,918:      pdf_renderer.py:  470: printSegment: KBCS keeps the core system that no existing paper offers: 
+   DEBUG: 2026-04-02 14:30:01,921:      pdf_renderer.py:  470: printSegment: per-flow reputation tracking (karma) with explicit
+   DEBUG: 2026-04-02 14:30:01,922:      pdf_renderer.py:  470: printSegment: recovery
+   DEBUG: 2026-04-02 14:30:01,925:      pdf_renderer.py:  470: printSegment: . On top of this core, we adopt specific proven techniques from the above papers to build a more robust
+   DEBUG: 2026-04-02 14:30:01,927:      pdf_renderer.py:  470: printSegment: system:
+   DEBUG: 2026-04-02 14:30:01,928:      pdf_renderer.py:  470: printSegment: | Source | What We Adopt | Why |
+   DEBUG: 2026-04-02 14:30:01,929:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,931:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 14:30:01,932:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,933:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:01,935:      pdf_renderer.py:  470: printSegment: P4air
+   DEBUG: 2026-04-02 14:30:01,946:      pdf_renderer.py:  470: printSegment:  | Per-flow byte tracking in P4 registers as the fairness
+   DEBUG: 2026-04-02 14:30:01,950:      pdf_renderer.py:  470: printSegment: measurement foundation | Proven that P4-level per-flow accounting works at line-rate |
+   DEBUG: 2026-04-02 14:30:01,951:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,952:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:01,953:      pdf_renderer.py:  470: printSegment: CCQM
+   DEBUG: 2026-04-02 14:30:01,970:      pdf_renderer.py:  470: printSegment:  | The concept of
+   DEBUG: 2026-04-02 14:30:01,975:      pdf_renderer.py:  470: printSegment: CCA-aware treatment — different CCA types need different enforcement | Validated that blind per-flow fairness is
+   DEBUG: 2026-04-02 14:30:01,976:      pdf_renderer.py:  470: printSegment: insufficient |
+   DEBUG: 2026-04-02 14:30:01,978:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,979:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:01,980:      pdf_renderer.py:  470: printSegment: PFQ
+   DEBUG: 2026-04-02 14:30:01,993:      pdf_renderer.py:  470: printSegment:  | Proactive buffer reservation and buffer recycling from low-priority to high-priority flows |
+   DEBUG: 2026-04-02 14:30:01,996:      pdf_renderer.py:  470: printSegment: Addresses incast and improves utilization under dynamic flow counts |
+   DEBUG: 2026-04-02 14:30:01,997:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:01,998:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:02,000:      pdf_renderer.py:  470: printSegment: HINT
+   DEBUG: 2026-04-02 14:30:02,018:      pdf_renderer.py:  470: printSegment:  | Telemetry-driven feedback loop —
+   DEBUG: 2026-04-02 14:30:02,025:      pdf_renderer.py:  470: printSegment: exporting switch state to a control plane for closed-loop optimization | Proves that P4-to-controller telemetry is
+   DEBUG: 2026-04-02 14:30:02,027:      pdf_renderer.py:  470: printSegment: lightweight and effective |
+   DEBUG: 2026-04-02 14:30:02,029:      pdf_renderer.py:  470: printSegment: What is NEW in KBCS (our contribution):
+   DEBUG: 2026-04-02 14:30:02,030:      pdf_renderer.py:  470: printSegment:  1 
+   DEBUG: 2026-04-02 14:30:02,032:      pdf_renderer.py:  470: printSegment: Karma (reputation) tracking
+   DEBUG: 2026-04-02 14:30:02,036:      pdf_renderer.py:  470: printSegment:  — flows are judged on accumulated behavior over many windows, not
+   DEBUG: 2026-04-02 14:30:02,038:      pdf_renderer.py:  470: printSegment: just the current packet.
+   DEBUG: 2026-04-02 14:30:02,040:      pdf_renderer.py:  470: printSegment:  2 
+   DEBUG: 2026-04-02 14:30:02,041:      pdf_renderer.py:  470: printSegment: Explicit recovery mechanism
+   DEBUG: 2026-04-02 14:30:02,044:      pdf_renderer.py:  470: printSegment:  — penalized flows get a formal second chance after sustained good
+   DEBUG: 2026-04-02 14:30:02,045:      pdf_renderer.py:  470: printSegment: behavior.
+   DEBUG: 2026-04-02 14:30:02,046:      pdf_renderer.py:  470: printSegment:  3 
+   DEBUG: 2026-04-02 14:30:02,048:      pdf_renderer.py:  470: printSegment: Adaptive control loop
+   DEBUG: 2026-04-02 14:30:02,054:      pdf_renderer.py:  470: printSegment:  — the controller dynamically tunes fairness thresholds and penalty parameters
+   DEBUG: 2026-04-02 14:30:02,055:      pdf_renderer.py:  470: printSegment: based on live JFI feedback.
+   DEBUG: 2026-04-02 14:30:02,057:      pdf_renderer.py:  470: printSegment:  4 
+   DEBUG: 2026-04-02 14:30:02,058:      pdf_renderer.py:  470: printSegment: Implicit CCA differentiation
+   DEBUG: 2026-04-02 14:30:02,065:      pdf_renderer.py:  470: printSegment:  — the karma mechanism naturally separates cooperators from
+   DEBUG: 2026-04-02 14:30:02,067:      pdf_renderer.py:  470: printSegment: aggressors without needing explicit CCA classification.
+   DEBUG: 2026-04-02 14:30:02,069:      pdf_renderer.py:  470: printSegment: | System | Reputation | Recovery | Dynamic Params | CCA-Aware |
+   DEBUG: 2026-04-02 14:30:02,071:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,072:      pdf_renderer.py:  470: printSegment: |---|:---:|:---:|:---:|:---:|
+   DEBUG: 2026-04-02 14:30:02,073:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,075:      pdf_renderer.py:  470: printSegment: | RED/CoDel | ✗ | ✗ | ✗ | ✗ |
+   DEBUG: 2026-04-02 14:30:02,101:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,104:      pdf_renderer.py:  470: printSegment: | P4air |
+   DEBUG: 2026-04-02 14:30:02,105:      pdf_renderer.py:  470: printSegment: ✗ | ✗ | ✗ | ✓ |
+   DEBUG: 2026-04-02 14:30:02,106:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,108:      pdf_renderer.py:  470: printSegment: | CCQM | ✗ | ✗ | ✗ | ✓ |
+   DEBUG: 2026-04-02 14:30:02,110:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,112:      pdf_renderer.py:  470: printSegment: | PFQ | ✗ | ✗ | ✗ | ✗ |
+   DEBUG: 2026-04-02 14:30:02,113:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,114:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:02,116:      pdf_renderer.py:  470: printSegment: KBCS
+   DEBUG: 2026-04-02 14:30:02,117:      pdf_renderer.py:  470: printSegment:  | 
+   DEBUG: 2026-04-02 14:30:02,118:      pdf_renderer.py:  470: printSegment: ✓
+   DEBUG: 2026-04-02 14:30:02,144:      pdf_renderer.py:  470: printSegment:  | 
+   DEBUG: 2026-04-02 14:30:02,145:      pdf_renderer.py:  470: printSegment: ✓
+   DEBUG: 2026-04-02 14:30:02,146:      pdf_renderer.py:  470: printSegment:  | 
+   DEBUG: 2026-04-02 14:30:02,148:      pdf_renderer.py:  470: printSegment: ✓
+   DEBUG: 2026-04-02 14:30:02,149:      pdf_renderer.py:  470: printSegment:  | 
+   DEBUG: 2026-04-02 14:30:02,151:      pdf_renderer.py:  470: printSegment: ✓
+   DEBUG: 2026-04-02 14:30:02,153:      pdf_renderer.py:  470: printSegment:  |
+   DEBUG: 2026-04-02 14:30:02,156:      pdf_renderer.py:  470: printSegment: 2. System Architecture
+   DEBUG: 2026-04-02 14:30:02,158:      pdf_renderer.py:  470: printSegment: KBCS has a two-tier architecture: a 
+   DEBUG: 2026-04-02 14:30:02,160:      pdf_renderer.py:  470: printSegment: P4 Data Plane
+   DEBUG: 2026-04-02 14:30:02,162:      pdf_renderer.py:  470: printSegment:  (fast, per-packet decisions) and a 
+   DEBUG: 2026-04-02 14:30:02,165:      pdf_renderer.py:  470: printSegment: Python Control Plane
+   DEBUG: 2026-04-02 14:30:02,166:      pdf_renderer.py:  470: printSegment:  (slow,
+   DEBUG: 2026-04-02 14:30:02,168:      pdf_renderer.py:  470: printSegment: aggregate intelligence).
+   DEBUG: 2026-04-02 14:30:02,170:      pdf_renderer.py:  470: printSegment: 2.1 Architecture Diagram
+   DEBUG: 2026-04-02 14:30:02,173:      pdf_renderer.py:  470: printSegment: ┌───────────────────────────────────────────────────────────────────┐
+   DEBUG: 2026-04-02 14:30:02,202:      pdf_renderer.py:  470: printSegment: │                         KBCS SYSTEM                               │
+   DEBUG: 2026-04-02 14:30:02,206:      pdf_renderer.py:  470: printSegment: │                                                                   │
+   DEBUG: 2026-04-02 14:30:02,208:      pdf_renderer.py:  470: printSegment: │  ┌─────────────────────────────────────────────────────────────┐  │
+   DEBUG: 2026-04-02 14:30:02,210:      pdf_renderer.py:  470: printSegment: │  │               P4 DATA PLANE (per-packet, line-rate)         │  │
+   DEBUG: 2026-04-02 14:30:02,213:      pdf_renderer.py:  470: printSegment: │  │                                                             │  │
+   DEBUG: 2026-04-02 14:30:02,215:      pdf_renderer.py:  470: printSegment: │  │   ┌──────────┐  ┌────────────┐  ┌───────────┐              │  │
+   DEBUG: 2026-04-02 14:30:02,217:      pdf_renderer.py:  470: printSegment: │  │   │ 1. Flow  │→ │ 2. Byte    │→ │ 3. Karma  │              │  │
+   DEBUG: 2026-04-02 14:30:02,219:      pdf_renderer.py:  470: printSegment: │  │   │    ID    │  │  Counting  │  │   Update  │              │  │
+   DEBUG: 2026-04-02 14:30:02,221:      pdf_renderer.py:  470: printSegment: │  │   └──────────┘  └────────────┘  └─────┬─────┘              │  │
+   DEBUG: 2026-04-02 14:30:02,257:      pdf_renderer.py:  470: printSegment: │  │                                       ↓                     │  │
+   DEBUG: 2026-04-02 14:30:02,260:      pdf_renderer.py:  470: printSegment: │  │   ┌──────────┐  ┌────────────┐  ┌───────────┐              │  │
+   DEBUG: 2026-04-02 14:30:02,262:      pdf_renderer.py:  470: printSegment: │  │   │ 6. Queue │← │ 5. Drop /  │← │ 4. Color  │              │  │
+   DEBUG: 2026-04-02 14:30:02,264:      pdf_renderer.py:  470: printSegment: │  │   │ Priority │  │  ECN / PFQ │  │   Assign  │              │  │
+   DEBUG: 2026-04-02 14:30:02,266:      pdf_renderer.py:  470: printSegment: │  │   └──────────┘  └────────────┘  └───────────┘              │  │
+   DEBUG: 2026-04-02 14:30:02,269:      pdf_renderer.py:  470: printSegment: │  │                                                             │  │
+   DEBUG: 2026-04-02 14:30:02,271:      pdf_renderer.py:  470: printSegment: │  │   ┌──────────────────────────────────────────────┐          │  │
+   DEBUG: 2026-04-02 14:30:02,274:      pdf_renderer.py:  470: printSegment: │  │   │ 7. Telemetry Clone (karma, bytes, drops)     │          │  │
+   DEBUG: 2026-04-02 14:30:02,277:      pdf_renderer.py:  470: printSegment: │  │   └──────────────────────┬───────────────────────┘          │  │
+   DEBUG: 2026-04-02 14:30:02,279:      pdf_renderer.py:  470: printSegment: │  └──────────────────────────┼──────────────────────────────────┘  │
+   DEBUG: 2026-04-02 14:30:02,314:      pdf_renderer.py:  470: printSegment: │                             │ Thrift CLI / P4Runtime              │
+   DEBUG: 2026-04-02 14:30:02,317:      pdf_renderer.py:  470: printSegment: │  ┌──────────────────────────┼──────────────────────────────────┐  │
+   DEBUG: 2026-04-02 14:30:02,319:      pdf_renderer.py:  470: printSegment: │  │         PYTHON CONTROL PLANE (every 2 seconds)              │  │
+   DEBUG: 2026-04-02 14:30:02,322:      pdf_renderer.py:  470: printSegment: │  │                                                             │  │
+   DEBUG: 2026-04-02 14:30:02,324:      pdf_renderer.py:  470: printSegment: │  │   • Read per-flow telemetry (packets, drops, ECN marks)     │  │
+   DEBUG: 2026-04-02 14:30:02,325:      pdf_renderer.py:  470: printSegment: │  │   • Count active flows → recalculate fair_bytes             │  │
+   DEBUG: 2026-04-02 14:30:02,327:      pdf_renderer.py:  470: printSegment: │  │   • Compute Jain's Fairness Index                           │  │
+   DEBUG: 2026-04-02 14:30:02,329:      pdf_renderer.py:  470: printSegment: │  │   • Adjust penalty/reward using JFI trend                   │  │
+   DEBUG: 2026-04-02 14:30:02,331:      pdf_renderer.py:  470: printSegment: │  │   • Update PFQ buffer reservation based on flow count       │  │
+   DEBUG: 2026-04-02 14:30:02,333:      pdf_renderer.py:  470: printSegment: │  │   • Write updated parameters to P4 registers                │  │
+   DEBUG: 2026-04-02 14:30:02,334:      pdf_renderer.py:  470: printSegment: │  └─────────────────────────────────────────────────────────────┘  │
+   DEBUG: 2026-04-02 14:30:02,336:      pdf_renderer.py:  470: printSegment: │                                                                   │
+   DEBUG: 2026-04-02 14:30:02,338:      pdf_renderer.py:  470: printSegment: │  ┌─────────────────────────────────────────────────────────────┐  │
+   DEBUG: 2026-04-02 14:30:02,340:      pdf_renderer.py:  470: printSegment: │  │           VISUALIZATION (Grafana + InfluxDB)                │  │
+   DEBUG: 2026-04-02 14:30:02,342:      pdf_renderer.py:  470: printSegment: │  │   Real-time karma trajectories, throughput, JFI, drops      │  │
+   DEBUG: 2026-04-02 14:30:02,343:      pdf_renderer.py:  470: printSegment: │  └─────────────────────────────────────────────────────────────┘  │
+   DEBUG: 2026-04-02 14:30:02,345:      pdf_renderer.py:  470: printSegment: └───────────────────────────────────────────────────────────────────┘
+   DEBUG: 2026-04-02 14:30:02,347:      pdf_renderer.py:  470: printSegment: 2.2 Why Two Tiers?
+   DEBUG: 2026-04-02 14:30:02,385:      pdf_renderer.py:  470: printSegment: P4 is extremely fast but limited — it can count, compare, read/write registers, and make simple branch decisions. It
+   DEBUG: 2026-04-02 14:30:02,397:      pdf_renderer.py:  470: printSegment: cannot compute aggregate statistics (like JFI across all flows), cannot do floating-point math, and cannot implement
+   DEBUG: 2026-04-02 14:30:02,400:      pdf_renderer.py:  470: printSegment: learning algorithms. These require the Python control plane.
+   DEBUG: 2026-04-02 14:30:02,432:      pdf_renderer.py:  470: printSegment: The data plane handles every packet at wire speed. The control plane runs every 2 seconds, reads aggregate state,
+   DEBUG: 2026-04-02 14:30:02,439:      pdf_renderer.py:  470: printSegment: makes optimization decisions, and pushes updated parameters back. This separation ensures that no per-packet
+   DEBUG: 2026-04-02 14:30:02,441:      pdf_renderer.py:  470: printSegment: decision ever waits for software.
+   DEBUG: 2026-04-02 14:30:02,443:      pdf_renderer.py:  470: printSegment: 2.3 Responsibility Division
+   DEBUG: 2026-04-02 14:30:02,445:      pdf_renderer.py:  470: printSegment: | Task | Where It Runs | Why There |
+   DEBUG: 2026-04-02 14:30:02,446:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,447:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 14:30:02,449:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,453:      pdf_renderer.py:  470: printSegment: | Byte counting per flow | Data Plane | Must happen on every packet
+   DEBUG: 2026-04-02 14:30:02,454:      pdf_renderer.py:  470: printSegment: at line-rate |
+   DEBUG: 2026-04-02 14:30:02,456:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,458:      pdf_renderer.py:  470: printSegment: | Karma update | Data Plane | Per-window decision, needs register read/write |
+   DEBUG: 2026-04-02 14:30:02,460:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,467:      pdf_renderer.py:  470: printSegment: | Color assignment
+   DEBUG: 2026-04-02 14:30:02,470:      pdf_renderer.py:  470: printSegment: (GREEN/YELLOW/RED) | Data Plane | Simple threshold comparison per packet |
+   DEBUG: 2026-04-02 14:30:02,471:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,475:      pdf_renderer.py:  470: printSegment: | Drop / ECN decision | Data
+   DEBUG: 2026-04-02 14:30:02,478:      pdf_renderer.py:  470: printSegment: Plane | Must be per-packet, immediate |
+   DEBUG: 2026-04-02 14:30:02,479:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,481:      pdf_renderer.py:  470: printSegment: | Priority queue mapping | Data Plane | Direct hardware queue assignment |
+   DEBUG: 2026-04-02 14:30:02,483:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,488:      pdf_renderer.py:  470: printSegment: |
+   DEBUG: 2026-04-02 14:30:02,490:      pdf_renderer.py:  470: printSegment: RED streak tracking and recovery | Data Plane | Per-flow register tracking |
+   DEBUG: 2026-04-02 14:30:02,491:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,495:      pdf_renderer.py:  470: printSegment: | Telemetry export | Data Plane | Clone
+   DEBUG: 2026-04-02 14:30:02,496:      pdf_renderer.py:  470: printSegment: packets on state changes |
+   DEBUG: 2026-04-02 14:30:02,498:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,500:      pdf_renderer.py:  470: printSegment: | Active flow counting | Control Plane | Requires aggregation across all flow registers |
+   DEBUG: 2026-04-02 14:30:02,501:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,508:      pdf_renderer.py:  470: printSegment: |
+   DEBUG: 2026-04-02 14:30:02,510:      pdf_renderer.py:  470: printSegment: Fair bytes calculation | Control Plane | Division and multiplication beyond P4 capability |
+   DEBUG: 2026-04-02 14:30:02,512:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,516:      pdf_renderer.py:  470: printSegment: | JFI computation | Control
+   DEBUG: 2026-04-02 14:30:02,518:      pdf_renderer.py:  470: printSegment: Plane | Requires sum-of-squares across all flows |
+   DEBUG: 2026-04-02 14:30:02,519:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,524:      pdf_renderer.py:  470: printSegment: | Penalty/reward adjustment | Control Plane | Trend analysis over
+   DEBUG: 2026-04-02 14:30:02,526:      pdf_renderer.py:  470: printSegment: multiple epochs |
+   DEBUG: 2026-04-02 14:30:02,527:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,530:      pdf_renderer.py:  470: printSegment: | PFQ buffer reservation update | Control Plane | Mathematical function of flow count |
+   DEBUG: 2026-04-02 14:30:02,533:      pdf_renderer.py:  470: printSegment: 3. Data Plane Design — The Per-Packet Pipeline
+   DEBUG: 2026-04-02 14:30:02,536:      pdf_renderer.py:  470: printSegment: Every TCP data packet (excluding SYN/FIN/RST) passes through the following stages inside the P4 switch.
+   DEBUG: 2026-04-02 14:30:02,538:      pdf_renderer.py:  470: printSegment: 3.1 Stage 1 — Flow Identification
+   DEBUG: 2026-04-02 14:30:02,547:      pdf_renderer.py:  470: printSegment: Each flow is assigned a unique numeric ID via a P4 match-action table. The controller populates this table at
+   DEBUG: 2026-04-02 14:30:02,549:      pdf_renderer.py:  470: printSegment: experiment startup by mapping each host
+   DEBUG: 2026-04-02 14:30:02,550:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:02,552:      pdf_renderer.py:  470: printSegment: s source IP to a flow ID (1, 2, 3, ...). This is the same approach used by
+   DEBUG: 2026-04-02 14:30:02,553:      pdf_renderer.py:  470: printSegment: P4air.
+   DEBUG: 2026-04-02 14:30:02,556:      pdf_renderer.py:  470: printSegment: 3.2 Stage 2 — Byte Counting (Adopted from P4air)
+   DEBUG: 2026-04-02 14:30:02,574:      pdf_renderer.py:  470: printSegment: For each identified flow, a P4 register accumulates the total bytes sent within the current measurement window. This
+   DEBUG: 2026-04-02 14:30:02,576:      pdf_renderer.py:  470: printSegment: is the fundamental measurement that all subsequent decisions depend on.
+   DEBUG: 2026-04-02 14:30:02,578:      pdf_renderer.py:  470: printSegment: The measurement window is 
+   DEBUG: 2026-04-02 14:30:02,580:      pdf_renderer.py:  470: printSegment: 15 milliseconds
+   DEBUG: 2026-04-02 14:30:02,584:      pdf_renderer.py:  470: printSegment:  (approximately 1.5× a typical RTT). This window duration balances
+   DEBUG: 2026-04-02 14:30:02,585:      pdf_renderer.py:  470: printSegment: two needs:
+   DEBUG: 2026-04-02 14:30:02,586:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:02,589:      pdf_renderer.py:  470: printSegment: Short enough to detect aggressive bursts quickly.
+   DEBUG: 2026-04-02 14:30:02,590:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:02,596:      pdf_renderer.py:  470: printSegment: Long enough to capture a complete send-and-feedback cycle (the flow sends data, gets an ACK, and
+   DEBUG: 2026-04-02 14:30:02,597:      pdf_renderer.py:  470: printSegment: adjusts its rate).
+   DEBUG: 2026-04-02 14:30:02,599:      pdf_renderer.py:  470: printSegment: 3.3 Stage 3 — Karma Update (KBCS Core Contribution)
+   DEBUG: 2026-04-02 14:30:02,602:      pdf_renderer.py:  470: printSegment: At the end of each 15ms window, the switch evaluates the flow
+   DEBUG: 2026-04-02 14:30:02,604:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:02,606:      pdf_renderer.py:  470: printSegment: s behavior by comparing its byte count against the 
+   DEBUG: 2026-04-02 14:30:02,608:      pdf_renderer.py:  470: printSegment: fair_bytes
+   DEBUG: 2026-04-02 14:30:02,611:      pdf_renderer.py:  470: printSegment:  threshold (set dynamically by the controller).
+   DEBUG: 2026-04-02 14:30:02,613:      pdf_renderer.py:  470: printSegment: If the flow exceeded 
+   DEBUG: 2026-04-02 14:30:02,614:      pdf_renderer.py:  470: printSegment: fair_bytes
+   DEBUG: 2026-04-02 14:30:02,616:      pdf_renderer.py:  470: printSegment:  (unfair behavior):
+   DEBUG: 2026-04-02 14:30:02,618:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,626:      pdf_renderer.py:  470: printSegment: A karma penalty is applied. The penalty scales
+   DEBUG: 2026-04-02 14:30:02,629:      pdf_renderer.py:  470: printSegment: proportionally to how far the flow exceeded its share:
+   DEBUG: 2026-04-02 14:30:02,631:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:02,634:      pdf_renderer.py:  470: printSegment: Exceeded by up to 1.5× → base penalty (e.g., 8 karma points)
+   DEBUG: 2026-04-02 14:30:02,635:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:02,637:      pdf_renderer.py:  470: printSegment: Exceeded by 4× → double penalty (16 points)
+   DEBUG: 2026-04-02 14:30:02,638:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:02,640:      pdf_renderer.py:  470: printSegment: Exceeded by 8× → quadruple penalty (32 points)
+   DEBUG: 2026-04-02 14:30:02,642:      pdf_renderer.py:  470: printSegment: This proportional penalty is adopted from the principle behind CCQM
+   DEBUG: 2026-04-02 14:30:02,643:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:02,647:      pdf_renderer.py:  470: printSegment: s insight that different levels of
+   DEBUG: 2026-04-02 14:30:02,649:      pdf_renderer.py:  470: printSegment: aggressiveness need different treatment intensities.
+   DEBUG: 2026-04-02 14:30:02,651:      pdf_renderer.py:  470: printSegment: If the flow stayed under 
+   DEBUG: 2026-04-02 14:30:02,653:      pdf_renderer.py:  470: printSegment: fair_bytes
+   DEBUG: 2026-04-02 14:30:02,654:      pdf_renderer.py:  470: printSegment:  (cooperative behavior):
+   DEBUG: 2026-04-02 14:30:02,655:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,686:      pdf_renderer.py:  470: printSegment: A karma reward is applied (e.g., 4 karma points).
+   DEBUG: 2026-04-02 14:30:02,695:      pdf_renderer.py:  470: printSegment: The reward is deliberately smaller than the penalty so that one window of aggression requires multiple windows of
+   DEBUG: 2026-04-02 14:30:02,697:      pdf_renderer.py:  470: printSegment: good behavior to recover from.
+   DEBUG: 2026-04-02 14:30:02,699:      pdf_renderer.py:  470: printSegment: Karma Momentum (enhancement):
+   DEBUG: 2026-04-02 14:30:02,701:      pdf_renderer.py:  470: printSegment:  If a flow
+   DEBUG: 2026-04-02 14:30:02,702:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:02,721:      pdf_renderer.py:  470: printSegment: s karma is dropping rapidly (more than 15 points lost compared to
+   DEBUG: 2026-04-02 14:30:02,726:      pdf_renderer.py:  470: printSegment: the previous window), an additional penalty is applied. This accelerates enforcement against flows that are ramping
+   DEBUG: 2026-04-02 14:30:02,728:      pdf_renderer.py:  470: printSegment: up aggressively.
+   DEBUG: 2026-04-02 14:30:02,730:      pdf_renderer.py:  470: printSegment: Slow-Start Immunity:
+   DEBUG: 2026-04-02 14:30:02,748:      pdf_renderer.py:  470: printSegment:  New flows (first 20 packets) are exempt from penalties. This prevents false penalization
+   DEBUG: 2026-04-02 14:30:02,751:      pdf_renderer.py:  470: printSegment: during TCP slow start, where flows naturally send increasing amounts of data while probing available bandwidth.
+   DEBUG: 2026-04-02 14:30:02,753:      pdf_renderer.py:  470: printSegment: Idle Flow Recovery:
+   DEBUG: 2026-04-02 14:30:02,779:      pdf_renderer.py:  470: printSegment:  If a flow has been silent for more than 500ms, it receives a small karma boost when it
+   DEBUG: 2026-04-02 14:30:02,786:      pdf_renderer.py:  470: printSegment: resumes. This prevents stale low-karma scores from lingering on flows that went quiet because they were starved by
+   DEBUG: 2026-04-02 14:30:02,787:      pdf_renderer.py:  470: printSegment: other flows.
+   DEBUG: 2026-04-02 14:30:02,791:      pdf_renderer.py:  470: printSegment: 3.4 Stage 4 — Color Zone Assignment (Inspired by CCQM
+   DEBUG: 2026-04-02 14:30:02,792:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:02,794:      pdf_renderer.py:  470: printSegment: s Classification)
+   DEBUG: 2026-04-02 14:30:02,856:      pdf_renderer.py:  470: printSegment: Based on the accumulated karma score, the flow is placed into one of three zones. This is conceptually similar to
+   DEBUG: 2026-04-02 14:30:02,878:      pdf_renderer.py:  470: printSegment: how CCQM classifies flows into categories — but instead of classifying by CCA type (which requires complex feature
+   DEBUG: 2026-04-02 14:30:02,882:      pdf_renderer.py:  470: printSegment: extraction), KBCS classifies by behavioral reputation, which emerges naturally from the karma mechanism.
+   DEBUG: 2026-04-02 14:30:02,884:      pdf_renderer.py:  470: printSegment: | Zone | Karma Range | Meaning |
+   DEBUG: 2026-04-02 14:30:02,886:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,888:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 14:30:02,890:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,891:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:02,893:      pdf_renderer.py:  470: printSegment: GREEN
+   DEBUG: 2026-04-02 14:30:02,898:      pdf_renderer.py:  470: printSegment:  | 76–100 | Consistently cooperative. Has been at or below fair
+   DEBUG: 2026-04-02 14:30:02,901:      pdf_renderer.py:  470: printSegment: share over multiple windows. |
+   DEBUG: 2026-04-02 14:30:02,903:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,905:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:02,906:      pdf_renderer.py:  470: printSegment: YELLOW
+   DEBUG: 2026-04-02 14:30:02,910:      pdf_renderer.py:  470: printSegment:  | 41–75 | Moderate behavior. May be slightly aggressive or currently
+   DEBUG: 2026-04-02 14:30:02,911:      pdf_renderer.py:  470: printSegment: recovering. |
+   DEBUG: 2026-04-02 14:30:02,913:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,914:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:02,915:      pdf_renderer.py:  470: printSegment: RED
+   DEBUG: 2026-04-02 14:30:02,917:      pdf_renderer.py:  470: printSegment:  | 0–40 | Consistently aggressive. Has been exceeding fair share repeatedly. |
+   DEBUG: 2026-04-02 14:30:02,919:      pdf_renderer.py:  470: printSegment: How different CCAs naturally end up in different zones:
+   DEBUG: 2026-04-02 14:30:02,920:      pdf_renderer.py:  470: printSegment: | CCA | Typical Behavior | Natural Karma Trajectory |
+   DEBUG: 2026-04-02 14:30:02,921:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,922:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 14:30:02,923:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,930:      pdf_renderer.py:  470: printSegment: | Vegas | Self-throttles based on delay; stays well
+   DEBUG: 2026-04-02 14:30:02,931:      pdf_renderer.py:  470: printSegment: under fair share | Stays GREEN (high karma) |
+   DEBUG: 2026-04-02 14:30:02,932:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,935:      pdf_renderer.py:  470: printSegment: | Reno | Moderate aggression; backs off quickly on loss | Stays
+   DEBUG: 2026-04-02 14:30:02,936:      pdf_renderer.py:  470: printSegment: GREEN/YELLOW |
+   DEBUG: 2026-04-02 14:30:02,937:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,939:      pdf_renderer.py:  470: printSegment: | CUBIC | Ramps up aggressively until loss event | Oscillates YELLOW/RED |
+   DEBUG: 2026-04-02 14:30:02,939:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,946:      pdf_renderer.py:  470: printSegment: | BBR | Probes
+   DEBUG: 2026-04-02 14:30:02,949:      pdf_renderer.py:  470: printSegment: bandwidth aggressively; ignores most drops | Drops to RED quickly |
+   DEBUG: 2026-04-02 14:30:02,950:      pdf_renderer.py:  470: printSegment: This means KBCS achieves CCA-aware treatment 
+   DEBUG: 2026-04-02 14:30:02,952:      pdf_renderer.py:  470: printSegment: without needing to explicitly classify CCAs
+   DEBUG: 2026-04-02 14:30:02,959:      pdf_renderer.py:  470: printSegment: . The karma system
+   DEBUG: 2026-04-02 14:30:02,961:      pdf_renderer.py:  470: printSegment: naturally separates cooperative from aggressive flows. This is simpler than CCQM
+   DEBUG: 2026-04-02 14:30:02,962:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:02,965:      pdf_renderer.py:  470: printSegment: s Binary Decision Tree approach
+   DEBUG: 2026-04-02 14:30:02,966:      pdf_renderer.py:  470: printSegment: and avoids the problem of misclassification.
+   DEBUG: 2026-04-02 14:30:02,968:      pdf_renderer.py:  470: printSegment: 3.5 Stage 5 — Enforcement: Drop, ECN, and Buffer Management
+   DEBUG: 2026-04-02 14:30:02,970:      pdf_renderer.py:  470: printSegment: This stage combines three enforcement mechanisms:
+   DEBUG: 2026-04-02 14:30:02,972:      pdf_renderer.py:  470: printSegment: 5a. Budget-Based Drops (KBCS Core)
+   DEBUG: 2026-04-02 14:30:02,974:      pdf_renderer.py:  470: printSegment: Each color zone receives a different bandwidth budget within the window:
+   DEBUG: 2026-04-02 14:30:02,976:      pdf_renderer.py:  470: printSegment: | Zone | Budget | Drop Probability (if over budget) |
+   DEBUG: 2026-04-02 14:30:02,977:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,979:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 14:30:02,980:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,981:      pdf_renderer.py:  470: printSegment: | GREEN | 100% of fair
+   DEBUG: 2026-04-02 14:30:02,982:      pdf_renderer.py:  470: printSegment: _
+   DEBUG: 2026-04-02 14:30:02,984:      pdf_renderer.py:  470: printSegment: bytes | 10% — gentle signal for
+   DEBUG: 2026-04-02 14:30:02,986:      pdf_renderer.py:  470: printSegment: loss-based CCAs |
+   DEBUG: 2026-04-02 14:30:02,987:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,988:      pdf_renderer.py:  470: printSegment: | YELLOW | 75% of fair
+   DEBUG: 2026-04-02 14:30:02,989:      pdf_renderer.py:  470: printSegment: _
+   DEBUG: 2026-04-02 14:30:02,990:      pdf_renderer.py:  470: printSegment: bytes | 35% — moderate signal |
+   DEBUG: 2026-04-02 14:30:02,991:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:02,993:      pdf_renderer.py:  470: printSegment: | RED | 25% of fair
+   DEBUG: 2026-04-02 14:30:02,994:      pdf_renderer.py:  470: printSegment: _
+   DEBUG: 2026-04-02 14:30:03,000:      pdf_renderer.py:  470: printSegment: bytes | 90% — aggressive
+   DEBUG: 2026-04-02 14:30:03,001:      pdf_renderer.py:  470: printSegment: signal needed for flows like BBR that ignore moderate drops |
+   DEBUG: 2026-04-02 14:30:03,003:      pdf_renderer.py:  470: printSegment: When a flow
+   DEBUG: 2026-04-02 14:30:03,004:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,021:      pdf_renderer.py:  470: printSegment: s bytes exceed its budget, a random number is generated and compared against the drop threshold. This
+   DEBUG: 2026-04-02 14:30:03,024:      pdf_renderer.py:  470: printSegment: is probabilistic (not deterministic) to avoid synchronization effects where all flows get dropped simultaneously.
+   DEBUG: 2026-04-02 14:30:03,026:      pdf_renderer.py:  470: printSegment: 5b. ECN Marking (Dual Signaling)
+   DEBUG: 2026-04-02 14:30:03,033:      pdf_renderer.py:  470: printSegment: Packets that survive the drop decision are ECN-marked (the CE bit is set in the IP header). This provides a dual
+   DEBUG: 2026-04-02 14:30:03,034:      pdf_renderer.py:  470: printSegment: signaling strategy:
+   DEBUG: 2026-04-02 14:30:03,035:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,043:      pdf_renderer.py:  470: printSegment: Cooperative CCAs (CUBIC, Reno) that respond to ECN receive a gentle congestion signal and
+   DEBUG: 2026-04-02 14:30:03,045:      pdf_renderer.py:  470: printSegment: reduce their rate without losing data.
+   DEBUG: 2026-04-02 14:30:03,046:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,049:      pdf_renderer.py:  470: printSegment: Aggressive CCAs (BBR) that ignore ECN are forced to respond through the hard drop mechanism
+   DEBUG: 2026-04-02 14:30:03,050:      pdf_renderer.py:  470: printSegment: instead.
+   DEBUG: 2026-04-02 14:30:03,053:      pdf_renderer.py:  470: printSegment: This dual approach is inspired by HINT
+   DEBUG: 2026-04-02 14:30:03,055:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,071:      pdf_renderer.py:  470: printSegment: s principle of providing rich congestion information to end-hosts —
+   DEBUG: 2026-04-02 14:30:03,074:      pdf_renderer.py:  470: printSegment: ECN-capable hosts can react to marks, while ECN-unaware hosts are still managed through drops.
+   DEBUG: 2026-04-02 14:30:03,076:      pdf_renderer.py:  470: printSegment: 5c. Proactive Buffer Reservation (Adopted from PFQ)
+   DEBUG: 2026-04-02 14:30:03,078:      pdf_renderer.py:  470: printSegment: PFQ
+   DEBUG: 2026-04-02 14:30:03,079:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,084:      pdf_renderer.py:  470: printSegment: s key insight is that buffer space should be managed proactively, not just reactively. In KBCS, we adopt this
+   DEBUG: 2026-04-02 14:30:03,086:      pdf_renderer.py:  470: printSegment: through two mechanisms:
+   DEBUG: 2026-04-02 14:30:03,088:      pdf_renderer.py:  470: printSegment: Buffer Reservation for New Flows:
+   DEBUG: 2026-04-02 14:30:03,089:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,091:      pdf_renderer.py:  470: printSegment: The controller maintains a 
+   DEBUG: 2026-04-02 14:30:03,092:      pdf_renderer.py:  470: printSegment: "
+   DEBUG: 2026-04-02 14:30:03,093:      pdf_renderer.py:  470: printSegment: reserved buffer pool
+   DEBUG: 2026-04-02 14:30:03,094:      pdf_renderer.py:  470: printSegment: "
+   DEBUG: 2026-04-02 14:30:03,104:      pdf_renderer.py:  470: printSegment:  that is not allocated to any
+   DEBUG: 2026-04-02 14:30:03,107:      pdf_renderer.py:  470: printSegment: specific flow. This is calculated based on the current number of active flows:
+   DEBUG: 2026-04-02 14:30:03,108:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,111:      pdf_renderer.py:  470: printSegment: When few flows are active → larger reservation (more room for new arrivals)
+   DEBUG: 2026-04-02 14:30:03,112:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,115:      pdf_renderer.py:  470: printSegment: When many flows are active → smaller reservation (most buffer is needed by existing flows)
+   DEBUG: 2026-04-02 14:30:03,116:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,119:      pdf_renderer.py:  470: printSegment: The reservation is capped at a maximum percentage of total buffer to prevent waste
+   DEBUG: 2026-04-02 14:30:03,129:      pdf_renderer.py:  470: printSegment: This ensures that when new flows arrive (or existing flows suddenly burst, as in incast scenarios), there is always
+   DEBUG: 2026-04-02 14:30:03,131:      pdf_renderer.py:  470: printSegment: buffer space available rather than immediate drops.
+   DEBUG: 2026-04-02 14:30:03,133:      pdf_renderer.py:  470: printSegment: Buffer Recycling from RED to GREEN Flows:
+   DEBUG: 2026-04-02 14:30:03,134:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,178:      pdf_renderer.py:  470: printSegment: In standard systems, all flows share the buffer equally. In KBCS,
+   DEBUG: 2026-04-02 14:30:03,197:      pdf_renderer.py:  470: printSegment: the budget restriction on RED flows (only 25% of fair share) means RED flows consume less buffer. The control
+   DEBUG: 2026-04-02 14:30:03,200:      pdf_renderer.py:  470: printSegment: plane accounts for this saved buffer space and redistributes it by increasing the effective 
+   DEBUG: 2026-04-02 14:30:03,201:      pdf_renderer.py:  470: printSegment: fair_bytes
+   DEBUG: 2026-04-02 14:30:03,203:      pdf_renderer.py:  470: printSegment:  for GREEN
+   DEBUG: 2026-04-02 14:30:03,205:      pdf_renderer.py:  470: printSegment: flows.
+   DEBUG: 2026-04-02 14:30:03,208:      pdf_renderer.py:  470: printSegment: This is the KBCS adaptation of PFQ
+   DEBUG: 2026-04-02 14:30:03,209:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,213:      pdf_renderer.py:  470: printSegment: s buffer recycling mechanism: instead of recycling buffer from completed
+   DEBUG: 2026-04-02 14:30:03,214:      pdf_renderer.py:  470: printSegment: flows (PFQ
+   DEBUG: 2026-04-02 14:30:03,215:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,218:      pdf_renderer.py:  470: printSegment: s approach), we recycle buffer from penalized flows and give it to cooperative ones. This
+   DEBUG: 2026-04-02 14:30:03,219:      pdf_renderer.py:  470: printSegment: simultaneously:
+   DEBUG: 2026-04-02 14:30:03,219:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,221:      pdf_renderer.py:  470: printSegment: Punishes aggressive flows (less buffer budget)
+   DEBUG: 2026-04-02 14:30:03,222:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,224:      pdf_renderer.py:  470: printSegment: Rewards cooperative flows (more buffer budget)
+   DEBUG: 2026-04-02 14:30:03,225:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,227:      pdf_renderer.py:  470: printSegment: Maintains high link utilization (saved buffer is actually used, not wasted)
+   DEBUG: 2026-04-02 14:30:03,228:      pdf_renderer.py:  470: printSegment: 3.6 Stage 6 — RED Zone Recovery (KBCS Core Contribution)
+   DEBUG: 2026-04-02 14:30:03,246:      pdf_renderer.py:  470: printSegment: This is one of the most important contributions of KBCS. No existing AQM — not RED, not CoDel, not P4air, not
+   DEBUG: 2026-04-02 14:30:03,248:      pdf_renderer.py:  470: printSegment: CCQM, not PFQ — provides a formal recovery path for penalized flows.
+   DEBUG: 2026-04-02 14:30:03,249:      pdf_renderer.py:  470: printSegment: The Problem Without Recovery:
+   DEBUG: 2026-04-02 14:30:03,251:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,329:      pdf_renderer.py:  470: printSegment: A flow like BBR naturally probes bandwidth by periodically increasing its
+   DEBUG: 2026-04-02 14:30:03,363:      pdf_renderer.py:  470: printSegment: sending rate. Without recovery, BBR would get stuck in the RED zone permanently with 90% drops. Its throughput
+   DEBUG: 2026-04-02 14:30:03,370:      pdf_renderer.py:  470: printSegment: would collapse to near-zero indefinitely. This is not fairness — this is starvation. The link bandwidth that BBR would
+   DEBUG: 2026-04-02 14:30:03,372:      pdf_renderer.py:  470: printSegment: have used is wasted.
+   DEBUG: 2026-04-02 14:30:03,373:      pdf_renderer.py:  470: printSegment: How Recovery Works:
+   DEBUG: 2026-04-02 14:30:03,374:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,376:      pdf_renderer.py:  470: printSegment: A dedicated register (
+   DEBUG: 2026-04-02 14:30:03,377:      pdf_renderer.py:  470: printSegment: reg_red_streak
+   DEBUG: 2026-04-02 14:30:03,384:      pdf_renderer.py:  470: printSegment: ) counts how many consecutive 15ms windows a
+   DEBUG: 2026-04-02 14:30:03,387:      pdf_renderer.py:  470: printSegment: flow has been in the RED zone.
+   DEBUG: 2026-04-02 14:30:03,388:      pdf_renderer.py:  470: printSegment: After 
+   DEBUG: 2026-04-02 14:30:03,390:      pdf_renderer.py:  470: printSegment: 20 consecutive RED windows
+   DEBUG: 2026-04-02 14:30:03,391:      pdf_renderer.py:  470: printSegment:  (approximately 300ms):
+   DEBUG: 2026-04-02 14:30:03,392:      pdf_renderer.py:  470: printSegment:  1 
+   DEBUG: 2026-04-02 14:30:03,394:      pdf_renderer.py:  470: printSegment: The flow
+   DEBUG: 2026-04-02 14:30:03,395:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,397:      pdf_renderer.py:  470: printSegment: s karma is reset to 30 (low YELLOW zone)
+   DEBUG: 2026-04-02 14:30:03,399:      pdf_renderer.py:  470: printSegment:  2 
+   DEBUG: 2026-04-02 14:30:03,401:      pdf_renderer.py:  470: printSegment: The RED streak counter is reset to 0
+   DEBUG: 2026-04-02 14:30:03,403:      pdf_renderer.py:  470: printSegment:  3 
+   DEBUG: 2026-04-02 14:30:03,404:      pdf_renderer.py:  470: printSegment: The flow is reclassified as YELLOW
+   DEBUG: 2026-04-02 14:30:03,405:      pdf_renderer.py:  470: printSegment: This gives the flow a 
+   DEBUG: 2026-04-02 14:30:03,407:      pdf_renderer.py:  470: printSegment: "
+   DEBUG: 2026-04-02 14:30:03,409:      pdf_renderer.py:  470: printSegment: probation period.
+   DEBUG: 2026-04-02 14:30:03,410:      pdf_renderer.py:  470: printSegment: "
+   DEBUG: 2026-04-02 14:30:03,412:      pdf_renderer.py:  470: printSegment:  During this time:
+   DEBUG: 2026-04-02 14:30:03,413:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,416:      pdf_renderer.py:  470: printSegment: If the flow behaves cooperatively (stays under fair
+   DEBUG: 2026-04-02 14:30:03,417:      pdf_renderer.py:  470: printSegment: _
+   DEBUG: 2026-04-02 14:30:03,422:      pdf_renderer.py:  470: printSegment: bytes), its karma will gradually climb back
+   DEBUG: 2026-04-02 14:30:03,425:      pdf_renderer.py:  470: printSegment: through YELLOW toward GREEN.
+   DEBUG: 2026-04-02 14:30:03,428:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,435:      pdf_renderer.py:  470: printSegment: If the flow immediately becomes aggressive again, karma will drop right back to RED, and the
+   DEBUG: 2026-04-02 14:30:03,437:      pdf_renderer.py:  470: printSegment: 20-window countdown restarts.
+   DEBUG: 2026-04-02 14:30:03,440:      pdf_renderer.py:  470: printSegment: Why 20 windows (300ms)?
+   DEBUG: 2026-04-02 14:30:03,460:      pdf_renderer.py:  470: printSegment:  This is long enough that a truly aggressive flow has been meaningfully penalized
+   DEBUG: 2026-04-02 14:30:03,464:      pdf_renderer.py:  470: printSegment: (300ms of 90% drops is significant throughput loss), but short enough that the flow doesn
+   DEBUG: 2026-04-02 14:30:03,467:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,469:      pdf_renderer.py:  470: printSegment: t get permanently starved.
+   DEBUG: 2026-04-02 14:30:03,472:      pdf_renderer.py:  470: printSegment: 3.7 Stage 7 — Priority Queue Mapping
+   DEBUG: 2026-04-02 14:30:03,476:      pdf_renderer.py:  470: printSegment: After the drop/ECN decision, surviving packets are assigned to hardware priority queues:
+   DEBUG: 2026-04-02 14:30:03,479:      pdf_renderer.py:  470: printSegment: | Zone | Queue Priority | Effect |
+   DEBUG: 2026-04-02 14:30:03,481:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,483:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 14:30:03,485:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,489:      pdf_renderer.py:  470: printSegment: | GREEN | Priority 2 (highest) | Dequeued first; lowest latency |
+   DEBUG: 2026-04-02 14:30:03,492:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,497:      pdf_renderer.py:  470: printSegment: |
+   DEBUG: 2026-04-02 14:30:03,500:      pdf_renderer.py:  470: printSegment: YELLOW | Priority 1 (medium) | Dequeued after GREEN packets |
+   DEBUG: 2026-04-02 14:30:03,502:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,509:      pdf_renderer.py:  470: printSegment: | RED | Priority 0 (lowest) | Dequeued last; may
+   DEBUG: 2026-04-02 14:30:03,512:      pdf_renderer.py:  470: printSegment: face additional queue-based drops |
+   DEBUG: 2026-04-02 14:30:03,530:      pdf_renderer.py:  470: printSegment: BMv2 processes strict priority queues — GREEN packets are always served before YELLOW, and YELLOW before
+   DEBUG: 2026-04-02 14:30:03,533:      pdf_renderer.py:  470: printSegment: RED. This provides a second enforcement layer beyond drops.
+   DEBUG: 2026-04-02 14:30:03,536:      pdf_renderer.py:  470: printSegment: 3.8 Stage 8 — Telemetry Export (Adopted from HINT)
+   DEBUG: 2026-04-02 14:30:03,538:      pdf_renderer.py:  470: printSegment: Borrowing from HINT
+   DEBUG: 2026-04-02 14:30:03,541:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,552:      pdf_renderer.py:  470: printSegment: s approach of embedding switch state for external consumption, KBCS exports per-flow
+   DEBUG: 2026-04-02 14:30:03,555:      pdf_renderer.py:  470: printSegment: telemetry to the control plane and visualization layer.
+   DEBUG: 2026-04-02 14:30:03,558:      pdf_renderer.py:  470: printSegment: On specific events (color transitions, or periodically every 8th packet), the switch creates a 
+   DEBUG: 2026-04-02 14:30:03,560:      pdf_renderer.py:  470: printSegment: clone
+   DEBUG: 2026-04-02 14:30:03,563:      pdf_renderer.py:  470: printSegment:  of the packet. This
+   DEBUG: 2026-04-02 14:30:03,565:      pdf_renderer.py:  470: printSegment: clone carries:
+   DEBUG: 2026-04-02 14:30:03,567:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,569:      pdf_renderer.py:  470: printSegment: Flow ID
+   DEBUG: 2026-04-02 14:30:03,570:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,572:      pdf_renderer.py:  470: printSegment: Current karma score
+   DEBUG: 2026-04-02 14:30:03,574:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,576:      pdf_renderer.py:  470: printSegment: Current color zone
+   DEBUG: 2026-04-02 14:30:03,577:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,579:      pdf_renderer.py:  470: printSegment: Byte count
+   DEBUG: 2026-04-02 14:30:03,580:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,581:      pdf_renderer.py:  470: printSegment: Drop count
+   DEBUG: 2026-04-02 14:30:03,602:      pdf_renderer.py:  470: printSegment: The clone is sent to a telemetry collector that writes the data to InfluxDB, which feeds the Grafana dashboard for
+   DEBUG: 2026-04-02 14:30:03,604:      pdf_renderer.py:  470: printSegment: real-time visualization and provides the data that the control plane uses for its optimization decisions.
+   DEBUG: 2026-04-02 14:30:03,606:      pdf_renderer.py:  470: printSegment: This is not full INT (we do not embed telemetry into every transit packet header). Instead, we use P4
+   DEBUG: 2026-04-02 14:30:03,607:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,642:      pdf_renderer.py:  470: printSegment: s clone
+   DEBUG: 2026-04-02 14:30:03,671:      pdf_renderer.py:  470: printSegment: mechanism to generate dedicated telemetry packets only when state changes are detected. This is simpler and avoids
+   DEBUG: 2026-04-02 14:30:03,676:      pdf_renderer.py:  470: printSegment: the packet header overhead of full INT while still providing the closed-loop telemetry feedback that HINT
+   DEBUG: 2026-04-02 14:30:03,679:      pdf_renderer.py:  470: printSegment: demonstrated as valuable.
+   DEBUG: 2026-04-02 14:30:03,681:      pdf_renderer.py:  470: printSegment: 4. Control Plane Design — Q-Learning Based Adaptive Tuning
+   DEBUG: 2026-04-02 14:30:03,684:      pdf_renderer.py:  470: printSegment: 4.1 Why Reinforcement Learning for the Controller
+   DEBUG: 2026-04-02 14:30:03,686:      pdf_renderer.py:  470: printSegment: The KBCS data plane has multiple interacting parameters: 
+   DEBUG: 2026-04-02 14:30:03,688:      pdf_renderer.py:  470: printSegment: fair_bytes
+   DEBUG: 2026-04-02 14:30:03,689:      pdf_renderer.py:  470: printSegment: , 
+   DEBUG: 2026-04-02 14:30:03,691:      pdf_renderer.py:  470: printSegment: penalty_amt
+   DEBUG: 2026-04-02 14:30:03,692:      pdf_renderer.py:  470: printSegment: , 
+   DEBUG: 2026-04-02 14:30:03,694:      pdf_renderer.py:  470: printSegment: reward_amt
+   DEBUG: 2026-04-02 14:30:03,741:      pdf_renderer.py:  470: printSegment: , and the
+   DEBUG: 2026-04-02 14:30:03,781:      pdf_renderer.py:  470: printSegment: PFQ buffer reservation percentage. These parameters affect each other — for example, increasing penalty makes flows
+   DEBUG: 2026-04-02 14:30:03,791:      pdf_renderer.py:  470: printSegment: drop to RED faster, which triggers more buffer recycling, which changes the effective fair share for GREEN flows.
+   DEBUG: 2026-04-02 14:30:03,793:      pdf_renderer.py:  470: printSegment: A simple rule-based controller (e.g., 
+   DEBUG: 2026-04-02 14:30:03,795:      pdf_renderer.py:  470: printSegment: "
+   DEBUG: 2026-04-02 14:30:03,796:      pdf_renderer.py:  470: printSegment: if JFI 
+   DEBUG: 2026-04-02 14:30:03,797:      pdf_renderer.py:  470: printSegment: <
+   DEBUG: 2026-04-02 14:30:03,799:      pdf_renderer.py:  470: printSegment:  0.70, increase penalty
+   DEBUG: 2026-04-02 14:30:03,800:      pdf_renderer.py:  470: printSegment: "
+   DEBUG: 2026-04-02 14:30:03,804:      pdf_renderer.py:  470: printSegment: ) cannot account for these interactions and may
+   DEBUG: 2026-04-02 14:30:03,806:      pdf_renderer.py:  470: printSegment: make suboptimal or conflicting adjustments.
+   DEBUG: 2026-04-02 14:30:03,808:      pdf_renderer.py:  470: printSegment: Q-Learning is a model-free reinforcement learning technique that is well suited here because:
+   DEBUG: 2026-04-02 14:30:03,810:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,815:      pdf_renderer.py:  470: printSegment: It does not need a mathematical model of how the network behaves (which would be extremely
+   DEBUG: 2026-04-02 14:30:03,817:      pdf_renderer.py:  470: printSegment: complex to derive).
+   DEBUG: 2026-04-02 14:30:03,818:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,824:      pdf_renderer.py:  470: printSegment: It learns from direct observation: try an action, observe the result, and remember which actions led
+   DEBUG: 2026-04-02 14:30:03,825:      pdf_renderer.py:  470: printSegment: to good outcomes.
+   DEBUG: 2026-04-02 14:30:03,827:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:03,831:      pdf_renderer.py:  470: printSegment: Its Q-table is lightweight — our state and action spaces are deliberately small, so the table is only a few
+   DEBUG: 2026-04-02 14:30:03,833:      pdf_renderer.py:  470: printSegment: hundred entries.
+   DEBUG: 2026-04-02 14:30:03,835:      pdf_renderer.py:  470: printSegment: 4.2 The Control Loop
+   DEBUG: 2026-04-02 14:30:03,836:      pdf_renderer.py:  470: printSegment: Every 
+   DEBUG: 2026-04-02 14:30:03,838:      pdf_renderer.py:  470: printSegment: 2 seconds
+   DEBUG: 2026-04-02 14:30:03,840:      pdf_renderer.py:  470: printSegment: , the controller executes one cycle:
+   DEBUG: 2026-04-02 14:30:03,841:      pdf_renderer.py:  470: printSegment:  1 
+   DEBUG: 2026-04-02 14:30:03,842:      pdf_renderer.py:  470: printSegment: Observe
+   DEBUG: 2026-04-02 14:30:03,845:      pdf_renderer.py:  470: printSegment:  — Read P4 registers: per-flow packet counts, drop counts, ECN marks, forwarded bytes.
+   DEBUG: 2026-04-02 14:30:03,846:      pdf_renderer.py:  470: printSegment:  2 
+   DEBUG: 2026-04-02 14:30:03,847:      pdf_renderer.py:  470: printSegment: Compute State
+   DEBUG: 2026-04-02 14:30:03,855:      pdf_renderer.py:  470: printSegment:  — Calculate JFI, link utilization, and active flow count. Discretize these into buckets to
+   DEBUG: 2026-04-02 14:30:03,857:      pdf_renderer.py:  470: printSegment: form the current state (see 4.3).
+   DEBUG: 2026-04-02 14:30:03,858:      pdf_renderer.py:  470: printSegment:  3 
+   DEBUG: 2026-04-02 14:30:03,860:      pdf_renderer.py:  470: printSegment: Select Action
+   DEBUG: 2026-04-02 14:30:03,878:      pdf_renderer.py:  470: printSegment:  — Look up the current state in the Q-table to find the best action. With a small probability
+   DEBUG: 2026-04-02 14:30:03,882:      pdf_renderer.py:  470: printSegment: (exploration rate, starting at 10%), pick a random action instead to discover potentially better
+   DEBUG: 2026-04-02 14:30:03,884:      pdf_renderer.py:  470: printSegment: strategies.
+   DEBUG: 2026-04-02 14:30:03,885:      pdf_renderer.py:  470: printSegment:  4 
+   DEBUG: 2026-04-02 14:30:03,886:      pdf_renderer.py:  470: printSegment: Execute Action
+   DEBUG: 2026-04-02 14:30:03,889:      pdf_renderer.py:  470: printSegment:  — Apply the selected action (e.g., increase penalty, decrease fair
+   DEBUG: 2026-04-02 14:30:03,890:      pdf_renderer.py:  470: printSegment: _
+   DEBUG: 2026-04-02 14:30:03,894:      pdf_renderer.py:  470: printSegment: bytes headroom). See
+   DEBUG: 2026-04-02 14:30:03,895:      pdf_renderer.py:  470: printSegment: 4.4 for the full action list.
+   DEBUG: 2026-04-02 14:30:03,897:      pdf_renderer.py:  470: printSegment:  5 
+   DEBUG: 2026-04-02 14:30:03,899:      pdf_renderer.py:  470: printSegment: Update fair
+   DEBUG: 2026-04-02 14:30:03,900:      pdf_renderer.py:  470: printSegment: _
+   DEBUG: 2026-04-02 14:30:03,902:      pdf_renderer.py:  470: printSegment: bytes
+   DEBUG: 2026-04-02 14:30:03,904:      pdf_renderer.py:  470: printSegment:  — Always recalculate the base fair share from the current active flow count: 
+   DEBUG: 2026-04-02 14:30:03,909:      pdf_renderer.py:  470: printSegment: fair_bytes = (link_rate × window_duration) / active_flows × headroom_factor
+   DEBUG: 2026-04-02 14:30:03,910:      pdf_renderer.py:  470: printSegment: .
+   DEBUG: 2026-04-02 14:30:03,911:      pdf_renderer.py:  470: printSegment:  6 
+   DEBUG: 2026-04-02 14:30:03,913:      pdf_renderer.py:  470: printSegment: Update PFQ reservation
+   DEBUG: 2026-04-02 14:30:03,915:      pdf_renderer.py:  470: printSegment:  — Adjust buffer reservation percentage based on flow count.
+   DEBUG: 2026-04-02 14:30:03,916:      pdf_renderer.py:  470: printSegment:  7 
+   DEBUG: 2026-04-02 14:30:03,918:      pdf_renderer.py:  470: printSegment: Write
+   DEBUG: 2026-04-02 14:30:03,920:      pdf_renderer.py:  470: printSegment:  — Push all updated parameters to P4 registers.
+   DEBUG: 2026-04-02 14:30:03,922:      pdf_renderer.py:  470: printSegment:  8 
+   DEBUG: 2026-04-02 14:30:03,923:      pdf_renderer.py:  470: printSegment: Wait
+   DEBUG: 2026-04-02 14:30:03,926:      pdf_renderer.py:  470: printSegment:  — Let the network run for one epoch (2 seconds) under the new parameters.
+   DEBUG: 2026-04-02 14:30:03,927:      pdf_renderer.py:  470: printSegment:  9 
+   DEBUG: 2026-04-02 14:30:03,929:      pdf_renderer.py:  470: printSegment: Measure Reward
+   DEBUG: 2026-04-02 14:30:03,935:      pdf_renderer.py:  470: printSegment:  — After the epoch, read fresh telemetry and calculate the reward (how much JFI and
+   DEBUG: 2026-04-02 14:30:03,937:      pdf_renderer.py:  470: printSegment: utilization improved or worsened).
+   DEBUG: 2026-04-02 14:30:03,939:      pdf_renderer.py:  470: printSegment:  10 
+   DEBUG: 2026-04-02 14:30:03,940:      pdf_renderer.py:  470: printSegment: Learn
+   DEBUG: 2026-04-02 14:30:03,945:      pdf_renderer.py:  470: printSegment:  — Update the Q-table entry for the (previous state, action taken) pair using the standard
+   DEBUG: 2026-04-02 14:30:03,947:      pdf_renderer.py:  470: printSegment: Q-learning update rule.
+   DEBUG: 2026-04-02 14:30:03,948:      pdf_renderer.py:  470: printSegment:  11 
+   DEBUG: 2026-04-02 14:30:03,950:      pdf_renderer.py:  470: printSegment: Log
+   DEBUG: 2026-04-02 14:30:03,952:      pdf_renderer.py:  470: printSegment:  — Export the epoch summary to InfluxDB for Grafana visualization.
+   DEBUG: 2026-04-02 14:30:03,953:      pdf_renderer.py:  470: printSegment: 4.3 State Space
+   DEBUG: 2026-04-02 14:30:03,956:      pdf_renderer.py:  470: printSegment: The controller observes three metrics and discretizes each into buckets to form a compact state representation:
+   DEBUG: 2026-04-02 14:30:03,958:      pdf_renderer.py:  470: printSegment: | Metric | Buckets | Rationale |
+   DEBUG: 2026-04-02 14:30:03,959:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,960:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 14:30:03,960:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,961:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:03,962:      pdf_renderer.py:  470: printSegment: Jain
+   DEBUG: 2026-04-02 14:30:03,963:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:03,964:      pdf_renderer.py:  470: printSegment: s Fairness Index
+   DEBUG: 2026-04-02 14:30:03,965:      pdf_renderer.py:  470: printSegment:  | 
+   DEBUG: 2026-04-02 14:30:03,966:      pdf_renderer.py:  470: printSegment: <
+   DEBUG: 2026-04-02 14:30:03,969:      pdf_renderer.py:  470: printSegment:  0.70, 0.70–0.85, 0.85–0.95, > 0.95 | Captures
+   DEBUG: 2026-04-02 14:30:03,971:      pdf_renderer.py:  470: printSegment: severity of unfairness |
+   DEBUG: 2026-04-02 14:30:03,972:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,972:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:03,974:      pdf_renderer.py:  470: printSegment: Link Utilization
+   DEBUG: 2026-04-02 14:30:03,974:      pdf_renderer.py:  470: printSegment:  | 
+   DEBUG: 2026-04-02 14:30:03,975:      pdf_renderer.py:  470: printSegment: <
+   DEBUG: 2026-04-02 14:30:03,979:      pdf_renderer.py:  470: printSegment:  30%, 30–60%, 60–80%, > 80% | Prevents over-penalization that kills
+   DEBUG: 2026-04-02 14:30:03,980:      pdf_renderer.py:  470: printSegment: utilization |
+   DEBUG: 2026-04-02 14:30:03,981:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:03,983:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:03,985:      pdf_renderer.py:  470: printSegment: Active Flow Count
+   DEBUG: 2026-04-02 14:30:03,987:      pdf_renderer.py:  470: printSegment:  | 1–4, 5–8, 9–16, > 16 | Different flow counts need different parameter scales |
+   DEBUG: 2026-04-02 14:30:03,989:      pdf_renderer.py:  470: printSegment: Total state space = 4 × 4 × 4 = 
+   DEBUG: 2026-04-02 14:30:03,990:      pdf_renderer.py:  470: printSegment: 64 states
+   DEBUG: 2026-04-02 14:30:04,000:      pdf_renderer.py:  470: printSegment: . This is small enough for Q-learning to converge quickly (within a few
+   DEBUG: 2026-04-02 14:30:04,002:      pdf_renderer.py:  470: printSegment: minutes of traffic) while still capturing the key network conditions.
+   DEBUG: 2026-04-02 14:30:04,004:      pdf_renderer.py:  470: printSegment: 4.4 Action Space
+   DEBUG: 2026-04-02 14:30:04,007:      pdf_renderer.py:  470: printSegment: Each action adjusts one parameter by a small, bounded amount:
+   DEBUG: 2026-04-02 14:30:04,009:      pdf_renderer.py:  470: printSegment: | Action | What It Does | When It Helps |
+   DEBUG: 2026-04-02 14:30:04,010:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,011:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 14:30:04,012:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,013:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,015:      pdf_renderer.py:  470: printSegment: increase_penalty
+   DEBUG: 2026-04-02 14:30:04,020:      pdf_renderer.py:  470: printSegment:  | Penalty +2 (max 30) | JFI is low — need
+   DEBUG: 2026-04-02 14:30:04,021:      pdf_renderer.py:  470: printSegment: to punish aggressors harder |
+   DEBUG: 2026-04-02 14:30:04,022:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,023:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,025:      pdf_renderer.py:  470: printSegment: decrease_penalty
+   DEBUG: 2026-04-02 14:30:04,028:      pdf_renderer.py:  470: printSegment:  | Penalty −1 (min 5) | JFI is high — can relax to improve utilization
+   DEBUG: 2026-04-02 14:30:04,029:      pdf_renderer.py:  470: printSegment: |
+   DEBUG: 2026-04-02 14:30:04,030:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,032:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,033:      pdf_renderer.py:  470: printSegment: increase_reward
+   DEBUG: 2026-04-02 14:30:04,035:      pdf_renderer.py:  470: printSegment:  | Reward +1 (max 15) | Cooperative flows are recovering too slowly |
+   DEBUG: 2026-04-02 14:30:04,036:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,037:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,039:      pdf_renderer.py:  470: printSegment: decrease_reward
+   DEBUG: 2026-04-02 14:30:04,041:      pdf_renderer.py:  470: printSegment:  | Reward −1 (min 2) | Flows are escaping RED zone too easily |
+   DEBUG: 2026-04-02 14:30:04,042:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,043:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,045:      pdf_renderer.py:  470: printSegment: tighten_budget
+   DEBUG: 2026-04-02 14:30:04,051:      pdf_renderer.py:  470: printSegment:  | Reduce
+   DEBUG: 2026-04-02 14:30:04,053:      pdf_renderer.py:  470: printSegment: headroom factor by 0.1 | Flows are exceeding fair share despite penalties |
+   DEBUG: 2026-04-02 14:30:04,055:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,056:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,057:      pdf_renderer.py:  470: printSegment: loosen_budget
+   DEBUG: 2026-04-02 14:30:04,065:      pdf_renderer.py:  470: printSegment:  | Increase headroom
+   DEBUG: 2026-04-02 14:30:04,067:      pdf_renderer.py:  470: printSegment: factor by 0.1 | Utilization is too low — flows need more room |
+   DEBUG: 2026-04-02 14:30:04,068:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,070:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,071:      pdf_renderer.py:  470: printSegment: maintain
+   DEBUG: 2026-04-02 14:30:04,074:      pdf_renderer.py:  470: printSegment:  | No change | Current parameters are
+   DEBUG: 2026-04-02 14:30:04,076:      pdf_renderer.py:  470: printSegment: working well |
+   DEBUG: 2026-04-02 14:30:04,077:      pdf_renderer.py:  470: printSegment: Total action space = 
+   DEBUG: 2026-04-02 14:30:04,079:      pdf_renderer.py:  470: printSegment: 7 actions
+   DEBUG: 2026-04-02 14:30:04,081:      pdf_renderer.py:  470: printSegment: . Combined with 64 states, the Q-table has 64 × 7 = 
+   DEBUG: 2026-04-02 14:30:04,082:      pdf_renderer.py:  470: printSegment: 448 entries
+   DEBUG: 2026-04-02 14:30:04,084:      pdf_renderer.py:  470: printSegment:  — trivially small for a
+   DEBUG: 2026-04-02 14:30:04,086:      pdf_renderer.py:  470: printSegment: Python dictionary.
+   DEBUG: 2026-04-02 14:30:04,088:      pdf_renderer.py:  470: printSegment: 4.5 Reward Function
+   DEBUG: 2026-04-02 14:30:04,094:      pdf_renderer.py:  470: printSegment: After each epoch, the controller calculates a reward that captures what we care about — fairness, utilization, and
+   DEBUG: 2026-04-02 14:30:04,096:      pdf_renderer.py:  470: printSegment: absence of starvation:
+   DEBUG: 2026-04-02 14:30:04,098:      pdf_renderer.py:  470: printSegment: Reward = 10 × (JFI improvement) + 3 × (utilization) − 5 × (starvation count)
+   DEBUG: 2026-04-02 14:30:04,099:      pdf_renderer.py:  470: printSegment: Where:
+   DEBUG: 2026-04-02 14:30:04,101:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,103:      pdf_renderer.py:  470: printSegment: JFI improvement
+   DEBUG: 2026-04-02 14:30:04,105:      pdf_renderer.py:  470: printSegment:  = current JFI − previous JFI. Positive if fairness got better.
+   DEBUG: 2026-04-02 14:30:04,106:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,107:      pdf_renderer.py:  470: printSegment: Utilization
+   DEBUG: 2026-04-02 14:30:04,110:      pdf_renderer.py:  470: printSegment:  = current link utilization (0 to 1). Encourages the controller to not over-penalize.
+   DEBUG: 2026-04-02 14:30:04,112:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,113:      pdf_renderer.py:  470: printSegment: Starvation count
+   DEBUG: 2026-04-02 14:30:04,119:      pdf_renderer.py:  470: printSegment:  = number of flows with throughput below 10% of fair share. Heavily penalizes
+   DEBUG: 2026-04-02 14:30:04,121:      pdf_renderer.py:  470: printSegment: solutions that starve any flow.
+   DEBUG: 2026-04-02 14:30:04,125:      pdf_renderer.py:  470: printSegment: The weights (10, 3, 5) prioritize fairness above utilization but ensure the controller doesn
+   DEBUG: 2026-04-02 14:30:04,126:      pdf_renderer.py:  470: printSegment: '
+   DEBUG: 2026-04-02 14:30:04,128:      pdf_renderer.py:  470: printSegment: t achieve 
+   DEBUG: 2026-04-02 14:30:04,129:      pdf_renderer.py:  470: printSegment: "
+   DEBUG: 2026-04-02 14:30:04,131:      pdf_renderer.py:  470: printSegment: fairness
+   DEBUG: 2026-04-02 14:30:04,132:      pdf_renderer.py:  470: printSegment: "
+   DEBUG: 2026-04-02 14:30:04,135:      pdf_renderer.py:  470: printSegment:  by
+   DEBUG: 2026-04-02 14:30:04,137:      pdf_renderer.py:  470: printSegment: throttling everyone equally to near-zero throughput.
+   DEBUG: 2026-04-02 14:30:04,139:      pdf_renderer.py:  470: printSegment: 4.6 Q-Learning Update
+   DEBUG: 2026-04-02 14:30:04,141:      pdf_renderer.py:  470: printSegment: After each epoch, the Q-table entry for the state-action pair is updated using the standard rule:
+   DEBUG: 2026-04-02 14:30:04,143:      pdf_renderer.py:  470: printSegment: Q(state, action) = Q(state, action) + α × 
+   DEBUG: 2026-04-02 14:30:04,145:      pdf_renderer.py:  470: printSegment: [
+   DEBUG: 2026-04-02 14:30:04,146:      pdf_renderer.py:  470: printSegment: reward + γ × max Q(next
+   DEBUG: 2026-04-02 14:30:04,148:      pdf_renderer.py:  470: printSegment: _
+   DEBUG: 2026-04-02 14:30:04,150:      pdf_renderer.py:  470: printSegment: state, all actions) − Q(state, action)
+   DEBUG: 2026-04-02 14:30:04,152:      pdf_renderer.py:  470: printSegment: ]
+   DEBUG: 2026-04-02 14:30:04,153:      pdf_renderer.py:  470: printSegment: Where:
+   DEBUG: 2026-04-02 14:30:04,155:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,156:      pdf_renderer.py:  470: printSegment: α (learning rate) = 0.1
+   DEBUG: 2026-04-02 14:30:04,159:      pdf_renderer.py:  470: printSegment:  — how much new experience overrides old knowledge
+   DEBUG: 2026-04-02 14:30:04,160:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,162:      pdf_renderer.py:  470: printSegment: γ (discount factor) = 0.9
+   DEBUG: 2026-04-02 14:30:04,165:      pdf_renderer.py:  470: printSegment:  — how much future rewards matter relative to immediate ones
+   DEBUG: 2026-04-02 14:30:04,170:      pdf_renderer.py:  470: printSegment: Over time, the Q-table converges: each state maps to the action that historically produced the best
+   DEBUG: 2026-04-02 14:30:04,172:      pdf_renderer.py:  470: printSegment: fairness-utilization trade-off.
+   DEBUG: 2026-04-02 14:30:04,174:      pdf_renderer.py:  470: printSegment: 4.7 Parameters Under Dynamic Control
+   DEBUG: 2026-04-02 14:30:04,176:      pdf_renderer.py:  470: printSegment: | Parameter | Default | Range | Controlled By |
+   DEBUG: 2026-04-02 14:30:04,178:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,179:      pdf_renderer.py:  470: printSegment: |---|---|---|---|
+   DEBUG: 2026-04-02 14:30:04,180:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,180:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,181:      pdf_renderer.py:  470: printSegment: fair_bytes
+   DEBUG: 2026-04-02 14:30:04,191:      pdf_renderer.py:  470: printSegment:  | Calculated from link rate and flow
+   DEBUG: 2026-04-02 14:30:04,194:      pdf_renderer.py:  470: printSegment: count | 1500–15000 | Direct calculation (always) + headroom from Q-learning |
+   DEBUG: 2026-04-02 14:30:04,194:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,195:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,196:      pdf_renderer.py:  470: printSegment: penalty_amt
+   DEBUG: 2026-04-02 14:30:04,199:      pdf_renderer.py:  470: printSegment:  | 8 | 5–30 | Q-learning
+   DEBUG: 2026-04-02 14:30:04,201:      pdf_renderer.py:  470: printSegment: action selection |
+   DEBUG: 2026-04-02 14:30:04,202:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,203:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,204:      pdf_renderer.py:  470: printSegment: reward_amt
+   DEBUG: 2026-04-02 14:30:04,206:      pdf_renderer.py:  470: printSegment:  | 4 | 2–15 | Q-learning action selection |
+   DEBUG: 2026-04-02 14:30:04,208:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,209:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 14:30:04,210:      pdf_renderer.py:  470: printSegment: headroom_factor
+   DEBUG: 2026-04-02 14:30:04,213:      pdf_renderer.py:  470: printSegment:  | 1.5 | 1.0–2.5 |
+   DEBUG: 2026-04-02 14:30:04,216:      pdf_renderer.py:  470: printSegment: Q-learning action selection |
+   DEBUG: 2026-04-02 14:30:04,217:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 14:30:04,220:      pdf_renderer.py:  470: printSegment: | Buffer reservation % | Based on flow count | 5–30% | Direct calculation from flow count |
+   DEBUG: 2026-04-02 14:30:04,221:      pdf_renderer.py:  470: printSegment: Note that 
+   DEBUG: 2026-04-02 14:30:04,223:      pdf_renderer.py:  470: printSegment: fair_bytes
+   DEBUG: 2026-04-02 14:30:04,224:      pdf_renderer.py:  470: printSegment:  is always 
+   DEBUG: 2026-04-02 14:30:04,225:      pdf_renderer.py:  470: printSegment: mathematically calculated
+   DEBUG: 2026-04-02 14:30:04,245:      pdf_renderer.py:  470: printSegment:  from the link rate and flow count — Q-learning only
+   DEBUG: 2026-04-02 14:30:04,248:      pdf_renderer.py:  470: printSegment: adjusts the headroom factor that controls how much slack each flow gets above its strict fair share.
+   DEBUG: 2026-04-02 14:30:04,250:      pdf_renderer.py:  470: printSegment: 4.8 Why Q-Learning Works Here
+   DEBUG: 2026-04-02 14:30:04,253:      pdf_renderer.py:  470: printSegment: Scenario: 4 flows → 2 flows
+   DEBUG: 2026-04-02 14:30:04,254:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,257:      pdf_renderer.py:  470: printSegment: Controller detects 2 active flows. 
+   DEBUG: 2026-04-02 14:30:04,258:      pdf_renderer.py:  470: printSegment: fair_bytes
+   DEBUG: 2026-04-02 14:30:04,261:      pdf_renderer.py:  470: printSegment:  is immediately recalculated (doubled).
+   DEBUG: 2026-04-02 14:30:04,263:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,266:      pdf_renderer.py:  470: printSegment: Next epoch: state changes from (JFI=0.85, util=0.70, flows=1–4) to (JFI=0.90, util=0.50, flows=1–4).
+   DEBUG: 2026-04-02 14:30:04,267:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,269:      pdf_renderer.py:  470: printSegment: Q-table suggests 
+   DEBUG: 2026-04-02 14:30:04,270:      pdf_renderer.py:  470: printSegment: loosen_budget
+   DEBUG: 2026-04-02 14:30:04,277:      pdf_renderer.py:  470: printSegment:  for this new state → headroom increases → remaining flows can use
+   DEBUG: 2026-04-02 14:30:04,280:      pdf_renderer.py:  470: printSegment: more bandwidth → utilization recovers.
+   DEBUG: 2026-04-02 14:30:04,283:      pdf_renderer.py:  470: printSegment: Scenario: BBR dominating, JFI = 0.55
+   DEBUG: 2026-04-02 14:30:04,285:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,287:      pdf_renderer.py:  470: printSegment: State = (JFI 
+   DEBUG: 2026-04-02 14:30:04,288:      pdf_renderer.py:  470: printSegment: <
+   DEBUG: 2026-04-02 14:30:04,290:      pdf_renderer.py:  470: printSegment:  0.70, util > 80%, flows=1–4).
+   DEBUG: 2026-04-02 14:30:04,291:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,293:      pdf_renderer.py:  470: printSegment: Q-table has learned from past experience that 
+   DEBUG: 2026-04-02 14:30:04,294:      pdf_renderer.py:  470: printSegment: increase_penalty
+   DEBUG: 2026-04-02 14:30:04,297:      pdf_renderer.py:  470: printSegment:  works best in this state.
+   DEBUG: 2026-04-02 14:30:04,298:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,301:      pdf_renderer.py:  470: printSegment: Penalty increases → BBR karma degrades faster → BBR enters RED → 90% drops force throughput down → JFI
+   DEBUG: 2026-04-02 14:30:04,303:      pdf_renderer.py:  470: printSegment: recovers.
+   DEBUG: 2026-04-02 14:30:04,304:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,306:      pdf_renderer.py:  470: printSegment: On the next epoch, state moves to (JFI 0.70–0.85, ...) → Q-table may suggest 
+   DEBUG: 2026-04-02 14:30:04,307:      pdf_renderer.py:  470: printSegment: maintain
+   DEBUG: 2026-04-02 14:30:04,309:      pdf_renderer.py:  470: printSegment:  or another small
+   DEBUG: 2026-04-02 14:30:04,311:      pdf_renderer.py:  470: printSegment: adjustment.
+   DEBUG: 2026-04-02 14:30:04,313:      pdf_renderer.py:  470: printSegment: Scenario: All flows are cooperative (all CUBIC, same rate)
+   DEBUG: 2026-04-02 14:30:04,315:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,317:      pdf_renderer.py:  470: printSegment: State = (JFI > 0.95, util > 80%, flows=1–4).
+   DEBUG: 2026-04-02 14:30:04,319:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,320:      pdf_renderer.py:  470: printSegment: Q-table has learned that 
+   DEBUG: 2026-04-02 14:30:04,322:      pdf_renderer.py:  470: printSegment: maintain
+   DEBUG: 2026-04-02 14:30:04,323:      pdf_renderer.py:  470: printSegment:  or 
+   DEBUG: 2026-04-02 14:30:04,325:      pdf_renderer.py:  470: printSegment: decrease_penalty
+   DEBUG: 2026-04-02 14:30:04,328:      pdf_renderer.py:  470: printSegment:  works best here → controller does
+   DEBUG: 2026-04-02 14:30:04,331:      pdf_renderer.py:  470: printSegment: nothing or relaxes slightly.
+   DEBUG: 2026-04-02 14:30:04,333:      pdf_renderer.py:  470: printSegment: 4.9 Convergence and Safety Guarantees
+   DEBUG: 2026-04-02 14:30:04,335:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,337:      pdf_renderer.py:  470: printSegment: Exploration decay:
+   DEBUG: 2026-04-02 14:30:04,354:      pdf_renderer.py:  470: printSegment:  The exploration rate starts at 10% and decays over time (every 50 epochs,
+   DEBUG: 2026-04-02 14:30:04,357:      pdf_renderer.py:  470: printSegment: halved). This ensures the controller explores in early epochs but stabilizes as the Q-table matures.
+   DEBUG: 2026-04-02 14:30:04,359:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,360:      pdf_renderer.py:  470: printSegment: Bounded actions:
+   DEBUG: 2026-04-02 14:30:04,367:      pdf_renderer.py:  470: printSegment:  Every parameter has hard min/max limits. No Q-learning action can push a
+   DEBUG: 2026-04-02 14:30:04,369:      pdf_renderer.py:  470: printSegment: parameter outside its safe range.
+   DEBUG: 2026-04-02 14:30:04,370:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,372:      pdf_renderer.py:  470: printSegment: Fallback:
+   DEBUG: 2026-04-02 14:30:04,380:      pdf_renderer.py:  470: printSegment:  If the Q-table is empty (first run), the controller falls back to conservative rule-based
+   DEBUG: 2026-04-02 14:30:04,382:      pdf_renderer.py:  470: printSegment: defaults (increase penalty if JFI 
+   DEBUG: 2026-04-02 14:30:04,383:      pdf_renderer.py:  470: printSegment: <
+   DEBUG: 2026-04-02 14:30:04,389:      pdf_renderer.py:  470: printSegment:  0.70, decrease if JFI > 0.90) until enough epochs have been
+   DEBUG: 2026-04-02 14:30:04,390:      pdf_renderer.py:  470: printSegment: experienced to populate the table.
+   DEBUG: 2026-04-02 14:30:04,394:      pdf_renderer.py:  470: printSegment: 5. Multi-Switch Topology
+   DEBUG: 2026-04-02 14:30:04,395:      pdf_renderer.py:  470: printSegment: 5.1 Why Multiple Switches Matter
+   DEBUG: 2026-04-02 14:30:04,434:      pdf_renderer.py:  470: printSegment: A single-switch dumbbell (hosts → one switch → server) is the standard testbed in most AQM papers including P4air and
+   DEBUG: 2026-04-02 14:30:04,441:      pdf_renderer.py:  470: printSegment: CCQM. While simple to set up, it only proves that the system works at a single congestion point. It does not answer
+   DEBUG: 2026-04-02 14:30:04,443:      pdf_renderer.py:  470: printSegment: critical questions like:
+   DEBUG: 2026-04-02 14:30:04,445:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,447:      pdf_renderer.py:  470: printSegment: What happens when a flow passes through two bottlenecks in sequence?
+   DEBUG: 2026-04-02 14:30:04,449:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,451:      pdf_renderer.py:  470: printSegment: Does karma enforcement at one switch interfere with enforcement at the next?
+   DEBUG: 2026-04-02 14:30:04,454:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 14:30:04,456:      pdf_renderer.py:  470: printSegment: Can independent KBCS instances coordinate without explicit communication?
+   DEBUG: 2026-04-02 14:30:04,466:      pdf_renderer.py:  470: printSegment: In real data center and campus networks, traffic routinely passes through 2–3 switch hops. Proving KBCS works across
+   DEBUG: 2026-04-02 14:30:04,468:      pdf_renderer.py:  470: printSegment: multiple hops is essential for research credibility.
+   DEBUG: 2026-04-02 14:30:04,470:      pdf_renderer.py:  470: printSegment: 5.2 Why a Two-Tier Dumbbell (Not Leaf-Spine)
+   DEBUG: 2026-04-02 14:30:04,471:      pdf_renderer.py:  470: printSegment: We deliberately chose a 
+   DEBUG: 2026-04-02 14:30:04,472:      pdf_renderer.py:  470: printSegment: two-tier dumbbell
+   DEBUG: 2026-04-02 14:30:04,476:      pdf_renderer.py:  470: printSegment:  over more complex topologies like leaf-spine for three reasons:
+   DEBUG: 2026-04-02 14:30:04,478:      pdf_renderer.py:  470: printSegment:  1 
+   DEBUG: 2026-04-02 14:30:04,480:      pdf_renderer.py:  470: printSegment: It is the minimum topology that proves multi-hop behavior.
+   DEBUG: 2026-04-02 14:30:04,514:      pdf_renderer.py:  470: printSegment:  Two tiers of switches with
+   DEBUG: 2026-04-02 14:30:04,536:      pdf_renderer.py:  470: printSegment: bottleneck links between them is enough to show that KBCS handles cascading congestion. Going
+   DEBUG: 2026-04-02 14:30:04,546:      pdf_renderer.py:  470: printSegment: bigger (leaf-spine with 6+ switches) adds setup complexity without proving anything new about the
+   DEBUG: 2026-04-02 14:30:04,549:      pdf_renderer.py:  470: printSegment: karma mechanism itself.
+   DEBUG: 2026-04-02 14:30:04,550:      pdf_renderer.py:  470: printSegment:  2 
+   DEBUG: 2026-04-02 14:30:04,552:      pdf_renderer.py:  470: printSegment: It is reproducible.
+   DEBUG: 2026-04-02 14:30:04,580:      pdf_renderer.py:  470: printSegment:  A 4-switch topology runs comfortably in Mininet on a standard VM. Leaf-spine
+   DEBUG: 2026-04-02 14:30:04,591:      pdf_renderer.py:  470: printSegment: with 6+ switches and 32+ hosts would require significant CPU/memory and introduce BMv2
+   DEBUG: 2026-04-02 14:30:04,593:      pdf_renderer.py:  470: printSegment: software emulation artifacts that obscure the actual KBCS results.
+   DEBUG: 2026-04-02 14:30:04,594:      pdf_renderer.py:  470: printSegment:  3 
+   DEBUG: 2026-04-02 14:30:04,596:      pdf_renderer.py:  470: printSegment: It has clear, identifiable bottlenecks.
+   DEBUG: 2026-04-02 14:30:04,622:      pdf_renderer.py:  470: printSegment:  The links between access and aggregation switches are
+   DEBUG: 2026-04-02 14:30:04,635:      pdf_renderer.py:  470: printSegment: rate-limited to 10 Mbps, creating well-defined congestion points. This makes it easy to measure and
+   DEBUG: 2026-04-02 14:30:04,637:      pdf_renderer.py:  470: printSegment: attribute fairness improvements to KBCS rather than to topology effects.
+   DEBUG: 2026-04-02 14:30:04,638:      pdf_renderer.py:  470: printSegment: 5.3 Topology Design

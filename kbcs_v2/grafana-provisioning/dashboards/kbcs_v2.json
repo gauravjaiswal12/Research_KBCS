@@ -1,0 +1,133 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "title": "Karma Score — All Flows",
+      "type": "timeseries",
+      "datasource": { "type": "influxdb", "uid": "InfluxDB" },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 100,
+          "custom": { "lineWidth": 2, "fillOpacity": 8, "spanNulls": true }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "f1" }, "properties": [{ "id": "color", "value": { "fixedColor": "#ff1744", "mode": "fixed" } }, { "id": "displayName", "value": "F1 CUBIC" }] },
+          { "matcher": { "id": "byName", "options": "f2" }, "properties": [{ "id": "color", "value": { "fixedColor": "#ff6d00", "mode": "fixed" } }, { "id": "displayName", "value": "F2 BBR" }] },
+          { "matcher": { "id": "byName", "options": "f3" }, "properties": [{ "id": "color", "value": { "fixedColor": "#00e676", "mode": "fixed" } }, { "id": "displayName", "value": "F3 Vegas" }] },
+          { "matcher": { "id": "byName", "options": "f4" }, "properties": [{ "id": "color", "value": { "fixedColor": "#b388ff", "mode": "fixed" } }, { "id": "displayName", "value": "F4 Illinois" }] },
+          { "matcher": { "id": "byName", "options": "f5" }, "properties": [{ "id": "color", "value": { "fixedColor": "#00e5ff", "mode": "fixed" } }, { "id": "displayName", "value": "F5 CUBIC" }] },
+          { "matcher": { "id": "byName", "options": "f6" }, "properties": [{ "id": "color", "value": { "fixedColor": "#ffea00", "mode": "fixed" } }, { "id": "displayName", "value": "F6 BBR" }] },
+          { "matcher": { "id": "byName", "options": "f7" }, "properties": [{ "id": "color", "value": { "fixedColor": "#76ff03", "mode": "fixed" } }, { "id": "displayName", "value": "F7 Vegas" }] },
+          { "matcher": { "id": "byName", "options": "f8" }, "properties": [{ "id": "color", "value": { "fixedColor": "#e040fb", "mode": "fixed" } }, { "id": "displayName", "value": "F8 Illinois" }] }
+        ]
+      },
+      "targets": [
+        { "query": "SELECT mean(\"karma\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '1' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "f1", "refId": "A" },
+        { "query": "SELECT mean(\"karma\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '2' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "f2", "refId": "B" },
+        { "query": "SELECT mean(\"karma\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '3' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "f3", "refId": "C" },
+        { "query": "SELECT mean(\"karma\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '4' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "f4", "refId": "D" },
+        { "query": "SELECT mean(\"karma\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '5' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "f5", "refId": "E" },
+        { "query": "SELECT mean(\"karma\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '6' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "f6", "refId": "F" },
+        { "query": "SELECT mean(\"karma\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '7' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "f7", "refId": "G" },
+        { "query": "SELECT mean(\"karma\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '8' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "f8", "refId": "H" }
+      ]
+    },
+    {
+      "title": "Color Zone",
+      "type": "timeseries",
+      "datasource": { "type": "influxdb", "uid": "InfluxDB" },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 2,
+          "custom": { "lineWidth": 3, "fillOpacity": 15, "spanNulls": true },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "RED" }, "1": { "text": "YELLOW" }, "2": { "text": "GREEN" } } }
+          ]
+        }
+      },
+      "targets": [
+        { "query": "SELECT mean(\"color\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '1' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F1 CUBIC", "refId": "A" },
+        { "query": "SELECT mean(\"color\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '2' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F2 BBR", "refId": "B" },
+        { "query": "SELECT mean(\"color\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '3' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F3 Vegas", "refId": "C" },
+        { "query": "SELECT mean(\"color\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '4' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F4 Illinois", "refId": "D" }
+      ]
+    },
+    {
+      "title": "Drop Count (cumulative)",
+      "type": "timeseries",
+      "datasource": { "type": "influxdb", "uid": "InfluxDB" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 2, "fillOpacity": 10, "spanNulls": true } }
+      },
+      "targets": [
+        { "query": "SELECT max(\"drops\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '1' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F1 CUBIC", "refId": "A" },
+        { "query": "SELECT max(\"drops\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '2' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F2 BBR", "refId": "B" },
+        { "query": "SELECT max(\"drops\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '3' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F3 Vegas", "refId": "C" },
+        { "query": "SELECT max(\"drops\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '4' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F4 Illinois", "refId": "D" }
+      ]
+    },
+    {
+      "title": "Forwarded Bytes (cumulative)",
+      "type": "timeseries",
+      "datasource": { "type": "influxdb", "uid": "InfluxDB" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "fieldConfig": {
+        "defaults": { "unit": "decbytes", "custom": { "lineWidth": 2, "fillOpacity": 10, "spanNulls": true } }
+      },
+      "targets": [
+        { "query": "SELECT max(\"fwd_bytes\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '1' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F1 CUBIC", "refId": "A" },
+        { "query": "SELECT max(\"fwd_bytes\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '2' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F2 BBR", "refId": "B" },
+        { "query": "SELECT max(\"fwd_bytes\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '3' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F3 Vegas", "refId": "C" },
+        { "query": "SELECT max(\"fwd_bytes\") FROM \"kbcs_flow\" WHERE \"flow_id\" = '4' AND $timeFilter GROUP BY time(2s) fill(previous)", "alias": "F4 Illinois", "refId": "D" }
+      ]
+    },
+    {
+      "title": "Jain's Fairness Index",
+      "type": "gauge",
+      "datasource": { "type": "influxdb", "uid": "InfluxDB" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 18 },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 1,
+          "thresholds": {
+            "steps": [
+              { "color": "#ff1744", "value": null },
+              { "color": "#ffab00", "value": 0.5 },
+              { "color": "#00e676", "value": 0.85 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        { "query": "SELECT last(\"jfi\") FROM \"kbcs_system\" WHERE $timeFilter", "refId": "A" }
+      ]
+    },
+    {
+      "title": "Queue Depth (S1)",
+      "type": "timeseries",
+      "datasource": { "type": "influxdb", "uid": "InfluxDB" },
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 18 },
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 2, "fillOpacity": 20, "spanNulls": true } }
+      },
+      "targets": [
+        { "query": "SELECT mean(\"qdepth\") FROM \"kbcs_queue\" WHERE $timeFilter GROUP BY time(2s), \"port\" fill(previous)", "refId": "A" }
+      ]
+    }
+  ],
+  "refresh": "2s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["kbcs", "p4", "telemetry"],
+  "time": { "from": "now-5m", "to": "now" },
+  "title": "KBCS v2 — Live Telemetry",
+  "uid": "kbcs_v2_live"
+}

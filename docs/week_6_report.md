@@ -1,0 +1,91 @@
+# Week 6 Progress Report
+
+**Course:** Research Methodology
+**Date:** April 2, 2026
+**Project:** KBCS — Karma-Based Congestion Signaling
+
+---
+
+## Overview
+
+Following feedback from the previous meeting, we identified that our initial implementation of KBCS was too straightforward — it only tracked karma per flow and scheduled packets accordingly. While the core concept was solid, the design lacked the depth expected of a research-grade system. This report summarizes the specific changes we are making to address each point raised.
+
+---
+
+## 1. Role of the Controller: Making Parameters Dynamic
+
+**What was the problem?**
+In our original system, values like `fair_bytes` (how much bandwidth a flow is allowed per window) were hardcoded. If 4 flows became 2 flows, the fairness limit never adjusted — meaning the remaining flows only got half the bandwidth they should have.
+
+**What we are changing:**
+A Python-based controller now runs alongside the P4 switch in a closed feedback loop. Every 100ms it reads the current state of the network (number of active flows, link utilization, and how fair the traffic distribution is) and dynamically recalculates and pushes new parameters down to the P4 registers.
+
+For automatic tuning, the controller uses a **Q-Learning (Reinforcement Learning)** approach — it observes the current network state (JFI, utilization, flow count), picks an action (tighten penalties, relax thresholds, adjust fair budget), and learns over time which actions lead to better fairness outcomes.
+
+| Parameter | What It Controls | Update Frequency |
+|-----------|-----------------|-----------------|
+| `fair_bytes` | Per-flow bandwidth limit | Every 100ms |
+| `penalty_amt` | How harshly bad flows are punished | Every 2 seconds |
+| `reward_amt` | How fast good flows recover karma | Every 2 seconds |
+| `green_threshold` | Karma threshold for best treatment | Every 5 seconds |
+
+---
+
+## 2. Network Topology: Moving to Multiple Switches
+
+**What was the problem?**
+A single switch with a single bottleneck is too simple. In real networks, congestion often builds up across multiple hops, each of which needs to be managed independently.
+
+**What we are changing:**
+We are moving to a **two-tier dumbbell topology** where traffic flows through two levels of switches before reaching the server. Each switch runs its own independent instance of KBCS, tracking karma per flow locally. This is the topology we are implementing in Mininet:
+
+![Network Topology](./topology.png)
+
+Each switch independently penalizes and rewards flows passing through it. A flow that was aggressive at Switch 1 will enter Switch 3 with a lower karma, which means it still gets stricter treatment further down the path — naturally.
+
+---
+
+## 3. Revised System Architecture
+
+The original pipeline was: **receive packet → calculate karma → assign queue priority → forward.**
+
+The new pipeline adds multiple stages that make the system significantly more sophisticated:
+
+1. **Flow Tracking & Byte Accounting** — Count exactly how many bytes each flow sent in the last 15ms window.
+2. **Karma Update** — Compare against the dynamically set `fair_bytes`. Penalize flows that exceed it; reward flows that stay under.
+3. **Color Zone Assignment** — Classify flow reputation into GREEN (cooperative), YELLOW (warning), or RED (aggressive).
+4. **Differentiated AQM Enforcement** — Apply different drop probabilities per color zone. RED flows face up to 90% drop probability; GREEN flows only get gentle ECN marking.
+5. **RED Streak Recovery** — A new register tracks how many consecutive windows a flow has stayed in RED. After 20 windows (~300ms), it gets a one-time karma boost so it can try to recover rather than being permanently starved.
+6. **Telemetry Emission** — The switch sends per-flow stats (karma, bytes, drops) to the controller every cycle via P4Runtime.
+
+![P4 Pipeline Architecture](./architecture.png)
+
+A key addition compared to our previous design is the **recovery mechanism**. No prior AQM (not RED, not CoDel, not P4air) gives aggressive flows a formal way out.
+
+---
+
+## 4. How Congestion Is Handled in Our Work
+
+Unlike traditional systems like RED or CoDel that react purely to queue length, KBCS handles congestion across five distinct phases:
+
+- **Detect** — Measure bytes per flow per 15ms window.
+- **Attribute** — Is this flow above or below its fair share?
+- **Classify** — Assign GREEN / YELLOW / RED based on accumulated karma history.
+- **Enforce** — Apply differentiated drop rates and priority queue levels.
+- **Recover** — Track RED streaks; give persistent RED flows a second chance after 300ms.
+
+The critical difference is that KBCS judges flows on **history**, not just the current packet. A flow that was aggressive five seconds ago still carries the karma penalty today — unlike RED, which forgets instantly.
+
+We will incorporate **Proactive Buffer Reservation** (from PFQ, Wang et al. 2026): a portion of the switch buffer is reserved for new flows and incast traffic spikes, and the space saved by restricting RED flows gets redistributed to GREEN flows.
+
+---
+
+## 5. Latest Related Work and How We Position Against It
+
+| Paper | What They Did Well | What We Improve On |
+|-------|--------------------|--------------------|
+| **CCQM** (Ma et al., 2026) | Classifies CCAs into separate queues | Uses static thresholds; we use dynamic controller |
+| **PFQ** (Wang et al., 2026) | Proactive buffer reservation for incast | No reputation system; we track karma history |
+| **P4air** (Addanki et al., 2020) | Per-flow byte tracking in P4 | No recovery; blacklisted flows stay penalized forever |
+
+KBCS is the only proposed system that combines **reputation tracking**, **dynamic parameters**, **proactive buffering**, and **formal recovery** — all at line-rate in P4.

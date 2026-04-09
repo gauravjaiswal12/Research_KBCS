@@ -1,0 +1,15 @@
+graph TD
+    subgraph P4_Data_Plane
+        Parser[Packet Parser] --> Auth[1. Flow Tracking]
+        Auth --> Karma[2. Karma Calculation]
+        Karma --> Class[3. Color Assign Zone]
+        Class --> AQM[4. Drop Action]
+        AQM --> TM[5. Telemetry]
+    end
+    
+    subgraph Control_Plane
+        Controller{Adaptive Controller}
+    end
+    
+    Controller -- "Updates params" --> Karma
+    TM -- "Reports Telemetry" --> Controller
