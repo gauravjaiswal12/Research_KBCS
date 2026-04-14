@@ -1,4 +1,13 @@
-/* egress.p4 */
+/* egress.p4 — KBCS Enhanced Egress Pipeline                            */
+/*                                                                        */
+/* Handles:                                                               */
+/*  [E3] Graduated enforcement for YELLOW flows (ECN + window halving   */
+/*        was already done in ingress; egress just updates checksums)    */
+/*  [E9] INT Karma Telemetry Stamping — optional observability header   */
+/*        stamped in a custom diffserv field for external monitoring     */
+/*  [E10] Color Transition Detection — observability via diffserv DSCP  */
+/* ----------------------------------------------------------------------- */
+
 #ifndef _EGRESS_P4_
 #define _EGRESS_P4_
 
@@ -6,6 +15,9 @@
 #include <v1model.p4>
 #include "headers.p4"
 
+/* ================================================================== */
+/* Egress Control                                                       */
+/* ================================================================== */
 control MyEgress(inout parsed_headers_t hdr,
                  inout local_metadata_t meta,
                  inout standard_metadata_t standard_metadata) {
@@ -63,6 +75,9 @@ control MyDeparser(packet_out packet, in parsed_headers_t hdr) {
     }
 }
 
+/* ================================================================== */
+/* Checksum Verification                                                */
+/* ================================================================== */
 control MyVerifyChecksum(inout parsed_headers_t hdr, inout local_metadata_t meta) {
     apply {
         verify_checksum(hdr.ipv4.isValid(),
@@ -81,8 +96,13 @@ control MyVerifyChecksum(inout parsed_headers_t hdr, inout local_metadata_t meta
     }
 }
 
+/* ================================================================== */
+/* Checksum Recomputation                                               */
+/* (Required because YELLOW flows have diffserv/window modified)        */
+/* ================================================================== */
 control MyComputeChecksum(inout parsed_headers_t hdr, inout local_metadata_t meta) {
     apply {
+        // Recompute IPv4 header checksum (diffserv modified by ECN marking + E9)
         update_checksum(hdr.ipv4.isValid(),
             { hdr.ipv4.version,
               hdr.ipv4.ihl,
@@ -96,6 +116,25 @@ control MyComputeChecksum(inout parsed_headers_t hdr, inout local_metadata_t met
               hdr.ipv4.srcAddr,
               hdr.ipv4.dstAddr },
             hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
+
+        // Recompute TCP checksum (window may be halved for YELLOW flows [E3])
+        update_checksum_with_payload(hdr.tcp.isValid(),
+            { hdr.ipv4.srcAddr,
+              hdr.ipv4.dstAddr,
+              8w0,
+              hdr.ipv4.protocol,
+              hdr.ipv4.totalLen,
+              hdr.tcp.srcPort,
+              hdr.tcp.dstPort,
+              hdr.tcp.seqNo,
+              hdr.tcp.ackNo,
+              hdr.tcp.dataOffset,
+              hdr.tcp.res,
+              hdr.tcp.ecn,
+              hdr.tcp.ctrl,
+              hdr.tcp.window,
+              hdr.tcp.urgentPtr },
+            hdr.tcp.checksum, HashAlgorithm.csum16);
     }
 }
 

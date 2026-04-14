@@ -1,4 +1,5 @@
-/* headers.p4 */
+/* headers.p4 — KBCS Full Enhanced Header Definitions                   */
+/* Supports all Phase 1–4 enhancements from Major_Enhancements_Final.md */
 #ifndef _HEADERS_P4_
 #define _HEADERS_P4_
 
@@ -9,6 +10,9 @@ typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
 
+/* ------------------------------------------------------------------ */
+/* Protocol Headers                                                     */
+/* ------------------------------------------------------------------ */
 header ethernet_t {
     macAddr_t dstAddr;
     macAddr_t srcAddr;
@@ -18,7 +22,7 @@ header ethernet_t {
 header ipv4_t {
     bit<4>    version;
     bit<4>    ihl;
-    bit<8>    diffserv;
+    bit<8>    diffserv;    // bits [1:0] = ECN field (used for CE marking)
     bit<16>   totalLen;
     bit<16>   identification;
     bit<3>    flags;
@@ -38,8 +42,8 @@ header tcp_t {
     bit<4>  dataOffset;
     bit<3>  res;
     bit<3>  ecn;
-    bit<6>  ctrl;
-    bit<16> window;
+    bit<6>  ctrl;          // TCP flags: URG ACK PSH RST SYN FIN
+    bit<16> window;        // TCP receive window (halved for YELLOW flows)
     bit<16> checksum;
     bit<16> urgentPtr;
 }
@@ -54,10 +58,9 @@ header kbcs_telemetry_t {
 }
 
 struct parsed_headers_t {
-    ethernet_t       ethernet;
-    ipv4_t           ipv4;
-    tcp_t            tcp;
-    kbcs_telemetry_t kbcs_telemetry;
+    ethernet_t ethernet;
+    ipv4_t     ipv4;
+    tcp_t      tcp;
 }
 
 struct local_metadata_t {

@@ -1,0 +1,113 @@
+make: Warning: File 'Makefile' has modification time 43599 s in the future
+mkdir -p build pcaps logs results
+p4c-bm2-ss --p4v 16 --p4runtime-files build/kbcs.p4.p4info.txt \
+       -o build/kbcs.json p4src/kbcs.p4
+[--Wwarn=deprecated] warning: .txt format is being deprecated; use .txtpb instead
+>>> kbcs.p4 compiled → build/kbcs.json
+make: warning:  Clock skew detected.  Your build may be incomplete.
+make: Warning: File 'Makefile' has modification time 43597 s in the future
+mkdir -p build pcaps logs results
+p4c-bm2-ss --p4v 16 --p4runtime-files build/kbcs_baseline.p4info.txt \
+       -o build/kbcs_baseline.json p4src/kbcs_baseline.p4
+[--Wwarn=deprecated] warning: .txt format is being deprecated; use .txtpb instead
+>>> kbcs_baseline.p4 compiled → build/kbcs_baseline.json
+make: warning:  Clock skew detected.  Your build may be incomplete.
+
+############################################################
+  EXPERIMENT 1: BASELINE — FIFO, No Karma
+############################################################
+
+============================================================
+  BUILDING: build-baseline
+============================================================
+  $ make build-baseline
+mkdir -p build pcaps logs results
+p4c-bm2-ss --p4v 16 --p4runtime-files build/kbcs_baseline.p4info.txt \
+       -o build/kbcs_baseline.json p4src/kbcs_baseline.p4
+>>> kbcs_baseline.p4 compiled → build/kbcs_baseline.json
+  stderr: [--Wwarn=deprecated] warning: .txt format is being deprecated; use .txtpb instead
+  stderr: make: warning:  Clock skew detected.  Your build may be incomplete.
+  Build OK.
+
+============================================================
+  EXPERIMENT: Baseline FIFO Dumbbell
+  Topo: topology.py | JSON: build/kbcs_baseline.json | Duration: 30s
+============================================================
+  $ sudo -E PYTHONPATH=:/home/p4/kbcs/utils:/home/p4/src/mininet python3 topology.py --behavioral-exe simple_switch --json build/kbcs_baseline.json --traffic --duration 30 --priority-queues 0 
+  stderr: Traceback (most recent call last):
+  stderr:   File "/home/p4/kbcs/topology.py", line 46, in <module>
+  stderr:     from p4_mininet import P4Switch, P4Host
+  stderr: ModuleNotFoundError: No module named 'p4_mininet'
+
+  Waiting 5s before next experiment...
+
+############################################################
+  EXPERIMENT 2: KBCS ENHANCED — 4-Switch Dumbbell
+############################################################
+
+============================================================
+  BUILDING: build
+============================================================
+  $ make build
+make: 'build' is up to date.
+  stderr: make: warning:  Clock skew detected.  Your build may be incomplete.
+  Build OK.
+
+============================================================
+  EXPERIMENT: KBCS Enhanced Dumbbell
+  Topo: topology.py | JSON: build/kbcs.json | Duration: 30s
+============================================================
+  $ sudo -E PYTHONPATH=:/home/p4/kbcs/utils:/home/p4/src/mininet python3 topology.py --behavioral-exe simple_switch --json build/kbcs.json --traffic --duration 30 --priority-queues 4 --controller
+  stderr: Traceback (most recent call last):
+  stderr:   File "/home/p4/kbcs/topology.py", line 46, in <module>
+  stderr:     from p4_mininet import P4Switch, P4Host
+  stderr: ModuleNotFoundError: No module named 'p4_mininet'
+
+  Waiting 5s before next experiment...
+
+############################################################
+  EXPERIMENT 3: KBCS ENHANCED — 4-Switch Parking Lot
+############################################################
+
+============================================================
+  EXPERIMENT: KBCS Enhanced Parking Lot
+  Topo: parking_lot_topo.py | JSON: build/kbcs.json | Duration: 30s
+============================================================
+  $ sudo -E PYTHONPATH=:/home/p4/kbcs/utils:/home/p4/src/mininet python3 parking_lot_topo.py --behavioral-exe simple_switch --json build/kbcs.json --traffic --duration 30 --priority-queues 4 --controller
+  stderr: Traceback (most recent call last):
+  stderr:   File "/home/p4/kbcs/parking_lot_topo.py", line 41, in <module>
+  stderr:     from p4_mininet import P4Switch, P4Host
+  stderr: ModuleNotFoundError: No module named 'p4_mininet'
+
+======================================================================
+  FINAL COMPARISON: Baseline vs KBCS (Dumbbell & Parking Lot)
+======================================================================
+
+  ── Baseline (FIFO) (topology: ) ──
+  Flow                       Mbps    Retxmits
+  ------------------------------------------
+  ──────────────────────────────────────────
+  Total throughput           0.00 Mbps
+  Jain's FI                0.0000
+
+  ── KBCS (Dumbbell) (topology: ) ──
+  Flow                       Mbps    Retxmits
+  ------------------------------------------
+  ──────────────────────────────────────────
+  Total throughput           0.00 Mbps
+  Jain's FI                0.0000
+
+  ── KBCS (Parking Lot) (topology: ) ──
+  Flow                       Mbps    Retxmits
+  ------------------------------------------
+  ──────────────────────────────────────────
+  Total throughput           0.00 Mbps
+  Jain's FI                0.0000
+
+======================================================================
+
+  Full results saved → results/experiment_summary.json
+Traceback (most recent call last):
+  File "/home/p4/kbcs/plot_results.py", line 20, in <module>
+    import matplotlib
+ModuleNotFoundError: No module named 'matplotlib'

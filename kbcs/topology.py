@@ -1,3 +1,35 @@
+#!/usr/bin/env python3
+"""
+topology.py — KBCS Multi-Switch Dumbbell Topology
+==================================================
+Topology layout (4 switches):
+
+    h1 (CUBIC) ─── s1 ──┐
+    h2 (BBR)   ─── s2 ──┤─── s3 ─── s4 ─── h3 (Receiver)
+    h4 (Vegas) ─── s1 ──┘            │
+    h5 (Illinois) ─ s2 ───────────── ┘
+
+Concretely:
+  ┌─────────────────────────────────────────────────────────┐
+  │ Access layer: s1 (left), s2 (right)                     │
+  │ Core layer:   s3 (aggregation), s4 (bottleneck egress)  │
+  │ Bottleneck:   s4 ─── h3  @10 Mbps, 5ms               │
+  └─────────────────────────────────────────────────────────┘
+
+This extends the original single-switch design with:
+  - 4 P4-enabled switches all running kbcs.p4
+  - Two classes of senders on separate access switches
+  - A shared bottleneck that forces CCA competition
+
+KBCS runs on every switch so karma is maintained across hops.
+
+Usage (inside Ubuntu VM):
+    sudo PYTHONPATH=$PYTHONPATH:utils python3 topology.py \\
+        --behavioral-exe simple_switch                    \\
+        --json build/kbcs.json                            \\
+        --traffic --duration 30 --priority-queues 4
+"""
+
 from mininet.net import Mininet
 from mininet.topo import Topo
 from mininet.log import setLogLevel, info
@@ -293,6 +325,18 @@ def main():
     configure_hosts(net, args.num_flows, args.ccas)
     install_forwarding_rules(args.num_flows)
     sleep(1)
+
+    # Optionally start the adaptive control plane [E1]
+    ctrl_thread = None
+    if args.controller:
+        try:
+            from kbcs_controller import KBCSController
+            # Start one controller per switch (they share the register space)
+            ctrl = KBCSController(thrift_port=9090, interval=2, verbose=False)
+            ctrl_thread = ctrl.start_background()
+            info('*** KBCS Controller started in background\n')
+        except ImportError:
+            info('*** kbcs_controller.py not found — skipping controller\n')
 
     if args.test_only:
         net.pingAll()
