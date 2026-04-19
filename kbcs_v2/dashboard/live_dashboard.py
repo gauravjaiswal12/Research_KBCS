@@ -96,6 +96,18 @@ def poll_switch_registers():
                 total_fwd_bytes += fwd
                 throughputs.append(fwd)
 
+            # ── Read RL Controller parameters from S1 ────────────────────
+            rl_penalty = read_register(9090, "MyIngress.reg_penalty_amt", 0)
+            rl_reward  = read_register(9090, "MyIngress.reg_reward_amt", 0)
+            rl_budget  = read_register(9090, "MyIngress.reg_fair_bytes", 0)
+            # Apply defaults matching P4 code if registers return 0
+            if rl_penalty == 0:
+                rl_penalty = 8
+            if rl_reward == 0:
+                rl_reward = 4
+            if rl_budget == 0:
+                rl_budget = 4688
+
             # Compute JFI
             if len(throughputs) > 0 and sum(throughputs) > 0:
                 n = len(throughputs)
@@ -105,17 +117,53 @@ def poll_switch_registers():
             else:
                 jfi = 0.0
 
+            # ── Extra Research Metrics ──
+            qdepth = read_register(9090, "MyEgress.reg_qdepth", 5)
+            qdepth_pct = min((qdepth / 1000.0) * 100.0, 100.0)
+
+            sum_drops = sum(f["drops"] for f in snapshot["flows"].values())
+            drop_bytes = sum_drops * 1500  # Assume 1500 MTU for drops
+            if (total_fwd_bytes + drop_bytes) > 0:
+                pdr_pct = (drop_bytes / (total_fwd_bytes + drop_bytes)) * 100.0
+            else:
+                pdr_pct = 0.0
+
             with data_lock:
+                current_time = time.time()
+                last_ts = live_data.get("eff_ts", current_time - 0.5)
+                dt = current_time - last_ts
+                if dt <= 0: dt = 0.5
+                
+                # Use delta bytes per interval for effective throughput
+                last_fwd = live_data.get("last_fwd", 0)  # start from 0, not current
+                delta_fwd = max(0, total_fwd_bytes - last_fwd)
+                bps = (delta_fwd * 8) / dt if dt > 0 else 0
+                # NOTE: bottleneck is strictly enforced by P4 queue rate at 3 Mbps (250 pps)
+                eff_pct = min((bps / 3_000_000.0) * 100.0, 100.0)
+
                 live_data["flows"] = snapshot["flows"]
                 live_data["jfi"] = round(jfi, 4)
-                live_data["total_drops"] = sum(f["drops"] for f in snapshot["flows"].values())
+                live_data["total_drops"] = sum_drops
                 live_data["total_fwd"] = total_fwd_bytes
-                live_data["last_update"] = time.time()
+                live_data["last_update"] = current_time
+                live_data["rl_penalty"] = rl_penalty
+                live_data["rl_reward"] = rl_reward
+                live_data["rl_budget"] = rl_budget
+                
+                live_data["qdepth_pct"] = round(qdepth_pct, 1)
+                live_data["pdr_pct"] = round(pdr_pct, 1)
+                live_data["eff_pct"] = round(eff_pct, 1)
+                live_data["eff_ts"] = current_time
+                live_data["last_fwd"] = total_fwd_bytes
 
                 # History — keep last 120 samples
                 live_data["history"].append({
                     "ts": round(time.time(), 1),
                     "flows": {str(k): v["karma"] for k, v in snapshot["flows"].items()},
+                    "rl_penalty": rl_penalty,
+                    "rl_reward": rl_reward,
+                    "rl_budget": rl_budget,
+                    "eff_pct": round(eff_pct, 1),
                 })
                 if len(live_data["history"]) > 120:
                     live_data["history"] = live_data["history"][-120:]
@@ -284,12 +332,16 @@ DASHBOARD_HTML = r"""
                 <div class="stat-lbl">Jain's Fairness Index</div>
             </div>
             <div class="stat-item" style="text-align:left">
-                <div class="stat-num" id="drop-val" style="color:var(--red)">0</div>
-                <div class="stat-lbl">Total Drops</div>
+                <div class="stat-num" id="pdr-val" style="color:var(--red)">0.0%</div>
+                <div class="stat-lbl">Packet Drop Ratio</div>
             </div>
             <div class="stat-item" style="text-align:left">
-                <div class="stat-num" id="fwd-val" style="color:var(--green)">0</div>
-                <div class="stat-lbl">Forwarded Bytes</div>
+                <div class="stat-num" id="qdepth-val" style="color:#ff6d00">0.0%</div>
+                <div class="stat-lbl">Buffer Occupancy</div>
+            </div>
+            <div class="stat-item" style="text-align:left">
+                <div class="stat-num" id="eff-val" style="color:var(--green)">0.0%</div>
+                <div class="stat-lbl">Link Efficiency</div>
             </div>
             <div class="stat-item" style="text-align:left; margin-top:1rem">
                 <div class="stat-num" id="uptime" style="color:var(--purple);font-size:1.2rem;">--</div>
@@ -305,6 +357,43 @@ DASHBOARD_HTML = r"""
         <div class="panel-title">Karma Dynamics — Real-Time</div>
         <div class="chart-container">
             <canvas id="karmaChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Row 4: RL Agent Telemetry -->
+<div class="bot-row" style="margin-top:1rem;">
+    <div class="panel">
+        <div class="panel-title" style="display:flex; align-items:center; gap:10px;">
+            Q-Learning Agent Actions — Real-Time
+            <span style="font-size:0.65rem; padding:2px 8px; border-radius:999px; background:rgba(179,136,255,0.15); color:#b388ff; font-weight:600;">RL CONTROLLER</span>
+        </div>
+        <div style="display:flex; gap:1.5rem; margin-bottom:0.8rem;">
+            <div style="text-align:center;">
+                <div style="font-size:1.6rem; font-weight:700; color:#ff6d00;" id="rl-pen-val">8</div>
+                <div style="font-size:0.7rem; color:var(--txt2); text-transform:uppercase;">Penalty</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:1.6rem; font-weight:700; color:#00e676;" id="rl-rew-val">4</div>
+                <div style="font-size:0.7rem; color:var(--txt2); text-transform:uppercase;">Reward</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:1.6rem; font-weight:700; color:#00e5ff;" id="rl-bud-val">4688</div>
+                <div style="font-size:0.7rem; color:var(--txt2); text-transform:uppercase;">Fair Budget (bytes)</div>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="rlChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Row 5: Link Utilization -->
+<div class="bot-row" style="margin-top:1rem;">
+    <div class="panel">
+        <div class="panel-title">Link Utilization — Real-Time</div>
+        <div class="chart-container">
+            <canvas id="utilChart"></canvas>
         </div>
     </div>
 </div>
@@ -337,6 +426,53 @@ const karmaChart = new Chart(chartCtx, {
         scales: {
             x: { display:true, ticks:{ color:'#555', maxTicksLimit:10 }, grid:{ color:'rgba(255,255,255,0.03)' } },
             y: { min:0, max:110, ticks:{ color:'#555' }, grid:{ color:'rgba(255,255,255,0.03)' } }
+        }
+    }
+});
+
+// ── RL Chart.js setup (dual Y-axis) ──
+const rlCtx = document.getElementById('rlChart').getContext('2d');
+const rlChart = new Chart(rlCtx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            { label:'Penalty',     data:[], borderColor:'#ff6d00', backgroundColor:'rgba(255,109,0,0.08)',  borderWidth:2.5, tension:0.3, pointRadius:0, yAxisID:'y' },
+            { label:'Reward',      data:[], borderColor:'#00e676', backgroundColor:'rgba(0,230,118,0.08)', borderWidth:2.5, tension:0.3, pointRadius:0, yAxisID:'y' },
+            { label:'Fair Budget', data:[], borderColor:'#00e5ff', backgroundColor:'rgba(0,229,255,0.08)', borderWidth:2.5, tension:0.3, pointRadius:0, borderDash:[6,3], yAxisID:'y1' },
+        ]
+    },
+    options: {
+        responsive:true, maintainAspectRatio:false, animation:{ duration:0 },
+        plugins: {
+            legend: { labels: { color:'#8b949e', usePointStyle:true, pointStyle:'circle' } }
+        },
+        scales: {
+            x: { display:true, ticks:{ color:'#555', maxTicksLimit:10 }, grid:{ color:'rgba(255,255,255,0.03)' } },
+            y: { position:'left', title:{ display:true, text:'Penalty / Reward', color:'#8b949e' }, min:0, max:70, ticks:{ color:'#555' }, grid:{ color:'rgba(255,255,255,0.03)' } },
+            y1:{ position:'right', title:{ display:true, text:'Fair Budget (bytes)', color:'#8b949e' }, min:0, ticks:{ color:'#555' }, grid:{ drawOnChartArea:false } }
+        }
+    }
+});
+
+// ── Link Util Chart.js setup ──
+const utilCtx = document.getElementById('utilChart').getContext('2d');
+const utilChart = new Chart(utilCtx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            { label:'Link Efficiency (%)', data:[], borderColor:'#00e676', backgroundColor:'rgba(0,230,118,0.1)', borderWidth:2.5, tension:0.3, pointRadius:0, fill:true }
+        ]
+    },
+    options: {
+        responsive:true, maintainAspectRatio:false, animation:{ duration:0 },
+        plugins: {
+            legend: { labels: { color:'#8b949e', usePointStyle:true, pointStyle:'circle' } }
+        },
+        scales: {
+            x: { display:true, ticks:{ color:'#555', maxTicksLimit:10 }, grid:{ color:'rgba(255,255,255,0.03)' } },
+            y: { min:0, max:100, ticks:{ color:'#555' }, grid:{ color:'rgba(255,255,255,0.03)' } }
         }
     }
 });
@@ -482,8 +618,9 @@ async function poll() {
 
         // Update stats
         document.getElementById('jfi-val').textContent = d.jfi.toFixed(4);
-        document.getElementById('drop-val').textContent = d.total_drops.toLocaleString();
-        document.getElementById('fwd-val').textContent = (d.total_fwd/1024/1024).toFixed(2) + ' MB';
+        document.getElementById('pdr-val').textContent = (d.pdr_pct || 0).toFixed(1) + '%';
+        document.getElementById('qdepth-val').textContent = (d.qdepth_pct || 0).toFixed(1) + '%';
+        document.getElementById('eff-val').textContent = (d.eff_pct || 0).toFixed(1) + '%';
         if (d.last_update > 0) {
             if (!startTs) startTs = d.last_update;
             let elapsed = Math.round(d.last_update - startTs);
@@ -493,12 +630,33 @@ async function poll() {
         // Update chart
         if (d.history && d.history.length > 0) {
             if (!startTs) startTs = d.history[0].ts;
-            karmaChart.data.labels = d.history.map(h => Math.round(h.ts - startTs) + 's');
+            let labels = d.history.map(h => Math.round(h.ts - startTs) + 's');
+
+            karmaChart.data.labels = labels;
             karmaChart.data.datasets[0].data = d.history.map(h => h.flows['1'] || 0);
             karmaChart.data.datasets[1].data = d.history.map(h => h.flows['2'] || 0);
             karmaChart.data.datasets[2].data = d.history.map(h => h.flows['3'] || 0);
             karmaChart.data.datasets[3].data = d.history.map(h => h.flows['4'] || 0);
             karmaChart.update();
+
+            // ── Update RL Chart ──
+            rlChart.data.labels = labels;
+            rlChart.data.datasets[0].data = d.history.map(h => h.rl_penalty || 8);
+            rlChart.data.datasets[1].data = d.history.map(h => h.rl_reward || 4);
+            rlChart.data.datasets[2].data = d.history.map(h => h.rl_budget || 4688);
+            rlChart.update();
+
+            // ── Update Link Util Chart ──
+            utilChart.data.labels = labels;
+            utilChart.data.datasets[0].data = d.history.map(h => h.eff_pct || 0);
+            utilChart.update();
+        }
+
+        // ── Update RL live numbers ──
+        if (d.rl_penalty !== undefined) {
+            document.getElementById('rl-pen-val').textContent = d.rl_penalty;
+            document.getElementById('rl-rew-val').textContent = d.rl_reward;
+            document.getElementById('rl-bud-val').textContent = d.rl_budget;
         }
     } catch(e) {}
 }

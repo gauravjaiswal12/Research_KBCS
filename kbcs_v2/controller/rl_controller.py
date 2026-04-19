@@ -53,7 +53,7 @@ DECAY_EVERY     = 50     # decay epsilon every N epochs
 
 QTABLE_PATH     = os.path.join(os.path.dirname(__file__), 'qtable.pkl')
 EPOCH_SECS      = 2.0    # control loop interval
-LINK_MBPS       = 10.0   # bottleneck link capacity (must match topology.py)
+LINK_MBPS       = 3.0    # bottleneck link capacity (must match topology/experiment)
 AVG_PKT_BYTES   = 1500   # average packet size for throughput estimation
 
 # ─── Parameter Bounds (safety limits — Q-learning never goes outside these) ───

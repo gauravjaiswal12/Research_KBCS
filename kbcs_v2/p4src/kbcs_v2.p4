@@ -136,6 +136,7 @@ struct local_metadata_t {
     bit<1>  is_dropped;        // whether this packet was dropped
     bit<1>  should_clone;      // whether egress should clone for telemetry
     bit<19> saved_qdepth;      // queue depth saved for telemetry
+    bit<19> pfq_threshold;     // dynamic PFQ drop threshold passed to Egress
 }
 
 // ─── Parser ───────────────────────────────────────────────────────────────────
@@ -207,11 +208,21 @@ control MyIngress(inout parsed_headers_t hdr,
     register<bit<2>>(REG_SIZE)  reg_prev_color;     // color in previous epoch (for telemetry trigger)
 
     // Stage 5: drop counting (read by controller for telemetry)
+    // NOTE: Ingress drops removed (PFQ moves drops to Egress).
+    // reg_drops is now only written by Egress, but we keep the declaration
+    // here (BMv2 shares register memory across Ingress/Egress). 
     register<bit<32>>(REG_SIZE) reg_drops;
     register<bit<32>>(REG_SIZE) reg_forwarded_bytes; // bytes actually forwarded (not dropped)
 
     // Stage 6: RED streak recovery
     register<bit<8>>(REG_SIZE)  reg_red_streak;     // consecutive RED windows per flow
+
+    // PFQ Buffer Recycling: per-flow dynamic Egress drop threshold
+    // Written at window expiry (Ingress), read at packet departure (Egress).
+    // Encodes PFQ Algorithm 1 / Formula 6: flows that underused their quota
+    // get a higher threshold (more headroom), tightly-throttling over-budget
+    // flows and recycling that buffer space to well-behaved GREEN flows.
+    register<bit<19>>(REG_SIZE) reg_pfq_threshold;
 
     // ── Controller-writable parameters (single-entry registers) ────────────
     // These are written every 2s by rl_controller.py via Thrift API
@@ -399,6 +410,38 @@ control MyIngress(inout parsed_headers_t hdr,
                                     }
                                 }
 
+                                // ── PFQ Buffer Recycling (Algorithm 1 / Formula 6) ────
+                                // First, compute the budget that applied to this just-expired window:
+                                bit<32> expired_budget = fair_bytes;
+                                if (meta.flow_color == YELLOW) {
+                                    expired_budget = fair_bytes - (fair_bytes >> 2);
+                                } else if (meta.flow_color == RED) {
+                                    expired_budget = fair_bytes >> 2;
+                                }
+
+                                // Compute utilisation ratio: ratio_i = flow_bytes / expired_budget
+                                bit<19> pfq_thresh;
+                                if (meta.flow_bytes < (expired_budget >> 2)) {
+                                    // < 25% used: heavily underutilised — give GREEN-level headroom
+                                    pfq_thresh = 500;
+                                } else if (meta.flow_bytes < (expired_budget >> 1)) {
+                                    // 25–50% used: moderate headroom
+                                    pfq_thresh = 300;
+                                } else if (meta.flow_bytes < expired_budget) {
+                                    // 50–100% used: within budget, standard headroom
+                                    pfq_thresh = 150;
+                                } else {
+                                    // Over budget: strict color-based throttle
+                                    if (meta.flow_color == GREEN) {
+                                        pfq_thresh = 400;
+                                    } else if (meta.flow_color == YELLOW) {
+                                        pfq_thresh = 120;
+                                    } else {
+                                        pfq_thresh = 40;  // RED: tightly quarantined
+                                    }
+                                }
+                                reg_pfq_threshold.write(idx, pfq_thresh);
+
                                 // Reset window
                                 meta.flow_bytes = standard_metadata.packet_length;
                                 reg_wstart.write(idx, now);
@@ -418,10 +461,13 @@ control MyIngress(inout parsed_headers_t hdr,
 
                         if (meta.karma_score >= GREEN_THRESH) {
                             meta.flow_color = GREEN;
+                            standard_metadata.priority = 3w7; // Queue 7 (Highest)
                         } else if (meta.karma_score >= YELLOW_THRESH) {
                             meta.flow_color = YELLOW;
+                            standard_metadata.priority = 3w4; // Queue 4 (Medium)
                         } else {
                             meta.flow_color = RED;
+                            standard_metadata.priority = 3w0; // Queue 0 (Lowest)
                         }
 
                         // ── STAGE 6: RED Streak Recovery ─────────────────
@@ -444,11 +490,8 @@ control MyIngress(inout parsed_headers_t hdr,
                         }
                         reg_red_streak.write(idx, red_streak);
 
-                        // ── STAGE 5a: PFQ-Inspired Budget Calculation ────
-                        // Methodology Section 3.5 / 5c:
-                        //   GREEN  → 100% of fair_bytes
-                        //   YELLOW →  75% of fair_bytes
-                        //   RED    →  25% of fair_bytes (saved space recycled to GREEN)
+                        // ── STAGE 5a: Catch dynamic threshold & Flow Budget ────
+                        reg_pfq_threshold.read(meta.pfq_threshold, idx);
 
                         bit<32> flow_budget = fair_bytes;  // GREEN default = 100%
                         if (meta.flow_color == YELLOW) {
@@ -463,32 +506,11 @@ control MyIngress(inout parsed_headers_t hdr,
                         //   ECN mark on surviving packets.
 
                         if (meta.flow_bytes > flow_budget) {
-                            bit<8> rand_val;
-                            random(rand_val, 8w0, 8w255);
-
-                            bit<8> drop_thresh;
-                            if (meta.flow_color == GREEN) {
-                                drop_thresh = DROP_GREEN;   // ~10%
-                            } else if (meta.flow_color == YELLOW) {
-                                drop_thresh = DROP_YELLOW;  // ~35%
-                            } else {
-                                drop_thresh = DROP_RED;     // ~90%
-                            }
-
-                            if (rand_val < drop_thresh) {
-                                // Drop this packet
-                                bit<32> dc;
-                                reg_drops.read(dc, idx);
-                                reg_drops.write(idx, dc + 1);
-                                meta.is_dropped = 1;
-                                // Clone a drop-notification to telemetry before dropping
-                                clone(CloneType.I2E, TELEMETRY_SESSION);
-                                drop_pkt();
-                            } else {
-                                // Packet survives: ECN mark (Congestion Experienced)
-                                // Sets both ECN bits (CE = 0b11) in DSCP field
-                                hdr.ipv4.diffserv = hdr.ipv4.diffserv | 8w0x03;
-                            }
+                            // Stage 5b PFQ Update: 
+                            // Ingress no longer probabilistically drops packets!
+                            // It only applies ECN markings on aggressive traffic.
+                            // The real queue depth dropping now happens in Egress.
+                            hdr.ipv4.diffserv = hdr.ipv4.diffserv | 8w0x03;
                         }
 
                         // ── STAGE 7: Priority Queue Mapping ──────────────
@@ -498,15 +520,17 @@ control MyIngress(inout parsed_headers_t hdr,
                         //   RED    → Queue 0 (lowest, may be preempted)
 
                         if (meta.is_dropped == 0) {
-                            // STAGE 7: Priority Queue Mapping
-                            // NOTE: priority writes disabled for now — BMv2's
-                            // simple_switch_grpc defaults to 1 queue per port
-                            // and crashes with 'Priority out of range' otherwise.
-                            // To enable, start BMv2 with: --priority-queues 8
+                            // ── STAGE 7: PFQ Priority Queue Mapping ──────────
+                            // PFQ Queue Architecture (8 queues, --priority-queues 8):
+                            //   Q7 — Network Control / ARP / Telemetry (never drops)
+                            //   Q2 — GREEN karma flows  (high priority)
+                            //   Q1 — YELLOW karma flows (medium priority)
+                            //   Q0 — RED karma flows    (quarantine, strict headroom)
                             //
-                            // if (meta.flow_color == GREEN)  { standard_metadata.priority = 3w2; }
-                            // else if (meta.flow_color == YELLOW) { standard_metadata.priority = 3w1; }
-                            // else { standard_metadata.priority = 3w0; }
+                            // Requires BMv2 started with: --priority-queues 8
+                            if (meta.flow_color == GREEN)  { standard_metadata.priority = 3w2; }
+                            else if (meta.flow_color == YELLOW) { standard_metadata.priority = 3w1; }
+                            else { standard_metadata.priority = 3w0; }
 
                             // Track forwarded bytes for controller's JFI calculation
                             bit<32> fwd;
@@ -541,10 +565,16 @@ control MyIngress(inout parsed_headers_t hdr,
             // ── Standard IPv4 forwarding (all packets including SYN/FIN/ARP) ──
             ipv4_lpm.apply();
 
+        } else {
+            // ── Non-IPv4 packets (ARP, ICMP, Telemetry clones) ──
+            // Mapped to Queue 7 (highest priority) so they are NEVER
+            // dropped or delayed by data-plane congestion.
+            // This isolates the control plane from the data plane exactly
+            // as recommended by PFQ's buffer reservation design.
+            standard_metadata.priority = 3w7;
         }
-        // Non-IPv4 (including ARP) passes through to ipv4_lpm default which
-        // will mark_to_drop. Mininet hosts use static ARP entries from topology,
-        // so ARP broadcast is not needed.
+        // Note: Non-IPv4 packets that reach here without a forwarding entry
+        // will be dropped by ipv4_lpm default action, which is correct.
     }
 }
 
@@ -554,19 +584,60 @@ control MyEgress(inout parsed_headers_t hdr,
                  inout local_metadata_t meta,
                  inout standard_metadata_t standard_metadata) {
 
-    register<bit<19>>(8) reg_qdepth;   // queue depth per egress port (read by controller)
+    register<bit<19>>(8)  reg_qdepth;        // queue depth per egress port (read by controller)
+    register<bit<32>>(REG_SIZE) reg_drops;   // per-flow drop counter (Egress drops, not Ingress)
+    // NOTE: reg_drops is also declared in Ingress. In BMv2, both declarations
+    // map to the SAME shared register memory (BMv2 uses register name as the key).
+    // This is a simulator-specific behaviour used intentionally here.
 
     apply {
 
         if (standard_metadata.instance_type == 0) {
-            // Regular (non-clone) packet:
+            
+            // ── PFQ Egress Drop Logic (Algorithm 3 — Enqueue quota check) ──
+            // Read the per-flow DYNAMIC threshold computed by the Buffer
+            // Recycling formula at the last window boundary (Ingress stage 5a).
+            // If a flow underused its previous window, it gets a larger threshold
+            // (more buffer headroom). This is the core of PFQ buffer recycling:
+            // idle flows donate their unused space to active flows.
+            
+            // ── PFQ Egress Drop Logic (Algorithm 3 — Enqueue quota check) ──
+            // GUARD: Only apply PFQ enforcement to flows identified by Ingress
+            // (flow_id 1-4). Packets with flow_id==0 are reverse-path ACKs,
+            // ARP, or unclassified traffic. Dropping those kills TCP ACKs.
+            bit<32> flow_idx = (bit<32>)meta.flow_id;
+            bit<19> drop_threshold = 0;
+
+            if (flow_idx != 0) {
+                // Read the dynamically computed threshold from metadata (passed from Ingress)
+                drop_threshold = meta.pfq_threshold;
+
+                if (drop_threshold == 0) {
+                    // New flows whose window has never expired yet:
+                    // use conservative static defaults by color
+                    if (meta.flow_color == 2w2)      { drop_threshold = 400; } // GREEN
+                    else if (meta.flow_color == 2w1) { drop_threshold = 150; } // YELLOW
+                    else                             { drop_threshold = 60;  } // RED
+                }
+
+                // PFQ Proactive Drop: if this flow's share of the physical queue
+                // exceeds its dynamically allocated threshold, drop the packet.
+                if (standard_metadata.enq_qdepth > drop_threshold) {
+                    bit<32> dc;
+                    reg_drops.read(dc, flow_idx);
+                    reg_drops.write(flow_idx, dc + 1);
+                    meta.is_dropped = 1;
+                    mark_to_drop(standard_metadata);
+                }
+            }
+
             // Save queue depth for controller polling
             meta.saved_qdepth = standard_metadata.enq_qdepth;
             reg_qdepth.write((bit<32>)standard_metadata.egress_port,
                               standard_metadata.enq_qdepth);
 
             // Trigger E2E clone for telemetry if ingress requested it
-            if (meta.should_clone == 1) {
+            if (meta.should_clone == 1 || meta.is_dropped == 1) {
                 clone(CloneType.E2E, TELEMETRY_SESSION);
             }
         }
