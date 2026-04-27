@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
 """
-KBCS v2 — Live Dashboard + Topology Visualizer
-================================================
-Replaces both Grafana and the p4-utils web topology viewer.
+KBCS v2 — Dumbbell Topology Live Dashboard
+============================================
+Forked from live_dashboard.py for the 2-switch dumbbell topology.
+Hosts on port 5001 (isolated from the cross-topology dashboard on 5000).
 
-Polls BMv2 switch registers every 500ms via Thrift CLI and serves a
-premium web dashboard at http://0.0.0.0:5000 showing:
-  * Live animated 4-switch cross-linked topology with packet flows
-  * Real-time karma scores for all 4 sender CCAs
-  * Color zone distribution (GREEN/YELLOW/RED)
-  * Drop rate per flow
-  * Throughput fairness (JFI) gauge
-
-Usage (while Mininet is running):
-  python3 dashboard/live_dashboard.py
-
-Then open http://localhost:5000 in browser (or from Windows via port forward).
+Reads registers from S1 (thrift 9090) only — all 4 flows transit S1.
+Draws a horizontal dumbbell topology visualization.
 """
 
 import os
@@ -30,7 +21,7 @@ app = Flask(__name__)
 # ── Global state updated by background poller ────────────────────────────────
 live_data = {
     "flows": {},
-    "history": [],      # list of snapshots — up to 120 entries (60 seconds)
+    "history": [],
     "jfi": 0.0,
     "total_drops": 0,
     "total_fwd": 0,
@@ -43,8 +34,9 @@ FLOW_NAMES = {
     3: "Vegas",   4: "Illinois",
 }
 
-THRIFT_PORTS = [9090, 9091, 9092, 9093]
-SWITCH_NAMES = ["s1", "s2", "s3", "s4"]
+# Only 2 switches in dumbbell
+THRIFT_PORTS = [9090, 9091]
+SWITCH_NAMES = ["s1", "s2"]
 
 # ── Thrift register reader ──────────────────────────────────────────────────
 
@@ -53,7 +45,6 @@ def read_register(thrift_port, register_name, index):
     try:
         cmd = f"echo 'register_read {register_name} {index}' | simple_switch_CLI --thrift-port {thrift_port} 2>/dev/null"
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=2)
-        # Parse output like: "MyIngress.reg_karma[1]= 85"
         for line in result.stdout.split('\n'):
             if '=' in line and register_name.split('.')[-1] in line:
                 val_str = line.split('=')[-1].strip()
@@ -69,17 +60,15 @@ def poll_switch_registers():
         try:
             snapshot = {"ts": time.time(), "flows": {}}
 
-            # Read from S1 (thrift 9090) — flows 1-4 (h1-h4)
+            # Read from S1 (thrift 9090) — all 4 flows pass through S1
             total_fwd_bytes = 0
             throughputs = []
 
             for fid in range(1, 5):
                 karma = read_register(9090, "MyIngress.reg_karma", fid)
-                # CRITICAL: drops are written in MyEgress, not MyIngress
                 drops = read_register(9090, "MyEgress.reg_drops", fid)
                 fwd = read_register(9090, "MyIngress.reg_forwarded_bytes", fid)
 
-                # Determine color
                 if karma >= 76:
                     color = "GREEN"
                 elif karma >= 41:
@@ -101,7 +90,6 @@ def poll_switch_registers():
             rl_penalty = read_register(9090, "MyIngress.reg_penalty_amt", 0)
             rl_reward  = read_register(9090, "MyIngress.reg_reward_amt", 0)
             rl_budget  = read_register(9090, "MyIngress.reg_fair_bytes", 0)
-            # Apply defaults matching P4 code if registers return 0
             if rl_penalty == 0:
                 rl_penalty = 8
             if rl_reward == 0:
@@ -118,13 +106,9 @@ def poll_switch_registers():
             else:
                 jfi = 0.0
 
-            # ── Extra Research Metrics ──
-            # Read queue depth across all ports and take the maximum
-            # qdepth is enq_qdepth (packets in queue at moment of enqueue)
-            # The bottleneck uplink is port 5 on S1; also check 0-4 for safety
+            # Queue depth — check port 5 (bottleneck) on S1
             qdepths = [read_register(9090, "MyEgress.reg_qdepth", p) for p in range(0, 6)]
             qdepth = max(qdepths)
-            # Scale: typical qdepth values are 1-50 packets. Map to 0-100% using max of 50
             qdepth_pct = min((qdepth / 50.0) * 100.0, 100.0)
 
             sum_drops = sum(f["drops"] for f in snapshot["flows"].values())
@@ -134,15 +118,13 @@ def poll_switch_registers():
                 last_ts = live_data.get("eff_ts", current_time - 0.5)
                 dt = current_time - last_ts
                 if dt <= 0: dt = 0.5
-                
-                # Use delta bytes per interval for effective throughput
+
                 last_fwd = live_data.get("last_fwd", 0)
                 delta_fwd = max(0, total_fwd_bytes - last_fwd)
                 bps = (delta_fwd * 8) / dt if dt > 0 else 0
-                # NOTE: bottleneck is strictly enforced by P4 queue rate at 3 Mbps (250 pps)
                 eff_pct = min((bps / 3_000_000.0) * 100.0, 100.0)
 
-                # Delta-based PDR: drops in THIS interval vs packets in THIS interval
+                # Delta-based PDR
                 last_drops = live_data.get("last_drops", 0)
                 delta_drops = max(0, sum_drops - last_drops)
                 delta_drop_bytes = delta_drops * 1500
@@ -159,7 +141,7 @@ def poll_switch_registers():
                 live_data["rl_penalty"] = rl_penalty
                 live_data["rl_reward"] = rl_reward
                 live_data["rl_budget"] = rl_budget
-                
+
                 live_data["qdepth_pct"] = round(qdepth_pct, 1)
                 live_data["pdr_pct"] = round(pdr_pct, 1)
                 live_data["eff_pct"] = round(eff_pct, 1)
@@ -167,7 +149,7 @@ def poll_switch_registers():
                 live_data["last_fwd"] = total_fwd_bytes
                 live_data["last_drops"] = sum_drops
 
-                # Cumulative PDR: total drops since experiment start
+                # Cumulative PDR
                 cum_drop_bytes = sum_drops * 1500
                 if (total_fwd_bytes + cum_drop_bytes) > 0:
                     cum_pdr = (cum_drop_bytes / (total_fwd_bytes + cum_drop_bytes)) * 100.0
@@ -175,7 +157,7 @@ def poll_switch_registers():
                     cum_pdr = 0.0
                 live_data["cum_pdr_pct"] = round(cum_pdr, 2)
 
-                # History — keep last 120 samples
+                # History
                 live_data["history"].append({
                     "ts": round(time.time(), 1),
                     "flows": {str(k): v["karma"] for k, v in snapshot["flows"].items()},
@@ -188,12 +170,10 @@ def poll_switch_registers():
                     live_data["history"] = live_data["history"][-120:]
 
         except Exception as e:
-            print(f"[poller] Error: {e}")
+            pass
 
         time.sleep(0.5)
 
-
-# ── API endpoints ─────────────────────────────────────────────────────────────
 
 @app.route('/api/live')
 def api_live():
@@ -201,7 +181,7 @@ def api_live():
         return jsonify(live_data)
 
 
-# ── Main page (inline HTML — no external template files needed) ───────────────
+# ── Main page ─────────────────────────────────────────────────────────────────
 
 DASHBOARD_HTML = r"""
 <!DOCTYPE html>
@@ -209,7 +189,7 @@ DASHBOARD_HTML = r"""
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KBCS v2 — Live ObsCenter</title>
+    <title>KBCS v2 — Dumbbell Topology</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -237,7 +217,6 @@ DASHBOARD_HTML = r"""
             padding: 1.5rem 2rem;
         }
 
-        /* ── Header ── */
         header {
             display:flex; justify-content:space-between; align-items:center;
             margin-bottom:1.5rem; padding-bottom:1rem;
@@ -255,8 +234,13 @@ DASHBOARD_HTML = r"""
         .live-dot { width:8px; height:8px; border-radius:50%; background:var(--green);
                     box-shadow:0 0 6px var(--green); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .topo-badge {
+            display:inline-flex; align-items:center; gap:6px;
+            padding:4px 12px; border-radius:999px; font-size:0.7rem; font-weight:700;
+            background:rgba(255,171,0,0.15); border:1px solid var(--yellow);
+            color: var(--yellow); letter-spacing:0.05em;
+        }
 
-        /* ── Panels ── */
         .panel {
             background:var(--panel); backdrop-filter:blur(12px);
             border:1px solid rgba(255,255,255,0.04); border-radius:14px;
@@ -267,12 +251,10 @@ DASHBOARD_HTML = r"""
             letter-spacing:0.06em; color:var(--txt2); margin-bottom:0.8rem;
         }
 
-        /* ── Layout ── */
         .top-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1rem; }
         .mid-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
         .bot-row { display:grid; grid-template-columns:1fr; gap:1rem; }
 
-        /* ── Karma cards ── */
         .karma-val { font-size:2.8rem; font-weight:700; line-height:1; }
         .karma-sub { font-size:0.85rem; color:var(--txt2); margin-top:4px; }
         .color-badge {
@@ -286,27 +268,27 @@ DASHBOARD_HTML = r"""
         .bg-y { background:rgba(255,171,0,0.15); color:var(--yellow); }
         .bg-r { background:rgba(255,23,68,0.15); color:var(--red); }
 
-        /* ── Topology ── */
         .topo-panel { position:relative; height:380px; overflow:hidden;
             background: radial-gradient(circle at center, rgba(16,22,36,0.9) 0%, var(--bg) 100%);
         }
         #topoCanvas { width:100%; height:100%; }
 
-        /* ── Stats strip ── */
         .stats-strip { display:flex; gap:2rem; margin-top:0.5rem; }
         .stat-item { text-align:center; }
         .stat-num { font-size:1.8rem; font-weight:700; }
         .stat-lbl { font-size:0.75rem; color:var(--txt2); text-transform:uppercase; }
 
-        /* ── Chart ── */
         .chart-container { height:280px; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>KBCS v2 — Live ObsCenter</h1>
-    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <h1>KBCS v2 — Dumbbell Topology</h1>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <div class="topo-badge">DUMBBELL</div>
+        <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    </div>
 </header>
 
 <!-- Row 1: Karma score cards -->
@@ -340,7 +322,7 @@ DASHBOARD_HTML = r"""
 <!-- Row 2: Topology + Stats -->
 <div class="mid-row">
     <div class="panel topo-panel">
-        <div class="panel-title" style="position:absolute;top:1.2rem;left:1.5rem;z-index:5">Live Network Topology</div>
+        <div class="panel-title" style="position:absolute;top:1.2rem;left:1.5rem;z-index:5">Dumbbell Topology — Live</div>
         <canvas id="topoCanvas"></canvas>
     </div>
     <div class="panel">
@@ -428,7 +410,7 @@ function colorClass(k) { return k >= 76 ? 'cg' : k >= 41 ? 'cy' : 'cr'; }
 function badgeClass(k) { return k >= 76 ? 'bg-g' : k >= 41 ? 'bg-y' : 'bg-r'; }
 function colorLabel(k) { return k >= 76 ? 'GREEN' : k >= 41 ? 'YELLOW' : 'RED'; }
 
-// ── Chart.js setup ──
+// ── Karma Chart ──
 const chartCtx = document.getElementById('karmaChart').getContext('2d');
 const karmaChart = new Chart(chartCtx, {
     type: 'line',
@@ -443,9 +425,7 @@ const karmaChart = new Chart(chartCtx, {
     },
     options: {
         responsive:true, maintainAspectRatio:false, animation:{ duration:0 },
-        plugins: {
-            legend: { labels: { color:'#8b949e', usePointStyle:true, pointStyle:'circle' } }
-        },
+        plugins: { legend: { labels: { color:'#8b949e', usePointStyle:true, pointStyle:'circle' } } },
         scales: {
             x: { display:true, ticks:{ color:'#555', maxTicksLimit:10 }, grid:{ color:'rgba(255,255,255,0.03)' } },
             y: { min:0, max:110, ticks:{ color:'#555' }, grid:{ color:'rgba(255,255,255,0.03)' } }
@@ -453,7 +433,7 @@ const karmaChart = new Chart(chartCtx, {
     }
 });
 
-// ── RL Chart.js setup (dual Y-axis) ──
+// ── RL Chart ──
 const rlCtx = document.getElementById('rlChart').getContext('2d');
 const rlChart = new Chart(rlCtx, {
     type: 'line',
@@ -467,9 +447,7 @@ const rlChart = new Chart(rlCtx, {
     },
     options: {
         responsive:true, maintainAspectRatio:false, animation:{ duration:0 },
-        plugins: {
-            legend: { labels: { color:'#8b949e', usePointStyle:true, pointStyle:'circle' } }
-        },
+        plugins: { legend: { labels: { color:'#8b949e', usePointStyle:true, pointStyle:'circle' } } },
         scales: {
             x: { display:true, ticks:{ color:'#555', maxTicksLimit:10 }, grid:{ color:'rgba(255,255,255,0.03)' } },
             y: { position:'left', title:{ display:true, text:'Penalty / Reward', color:'#8b949e' }, min:0, max:70, ticks:{ color:'#555' }, grid:{ color:'rgba(255,255,255,0.03)' } },
@@ -478,7 +456,7 @@ const rlChart = new Chart(rlCtx, {
     }
 });
 
-// ── Link Util Chart.js setup ──
+// ── Link Util Chart ──
 const utilCtx = document.getElementById('utilChart').getContext('2d');
 const utilChart = new Chart(utilCtx, {
     type: 'line',
@@ -490,9 +468,7 @@ const utilChart = new Chart(utilCtx, {
     },
     options: {
         responsive:true, maintainAspectRatio:false, animation:{ duration:0 },
-        plugins: {
-            legend: { labels: { color:'#8b949e', usePointStyle:true, pointStyle:'circle' } }
-        },
+        plugins: { legend: { labels: { color:'#8b949e', usePointStyle:true, pointStyle:'circle' } } },
         scales: {
             x: { display:true, ticks:{ color:'#555', maxTicksLimit:10 }, grid:{ color:'rgba(255,255,255,0.03)' } },
             y: { min:0, max:100, ticks:{ color:'#555' }, grid:{ color:'rgba(255,255,255,0.03)' } }
@@ -500,7 +476,7 @@ const utilChart = new Chart(utilCtx, {
     }
 });
 
-// ── Topology Canvas ──
+// ── Dumbbell Topology Canvas ──
 const tc = document.getElementById('topoCanvas');
 const tctx = tc.getContext('2d');
 let particles = [];
@@ -508,34 +484,29 @@ let particles = [];
 function resizeTopo() { tc.width = tc.parentElement.clientWidth; tc.height = tc.parentElement.clientHeight; }
 window.addEventListener('resize', resizeTopo); resizeTopo();
 
-// Node positions (fraction of canvas)
+// Dumbbell layout: senders on left, S1 center-left, S2 center-right, receivers on right
 const NODES = {
-    h1: { x:0.08, y:0.2, label:'H1\nCUBIC',    color:'#ff1744', r:30 },
-    h2: { x:0.08, y:0.45, label:'H2\nBBR',      color:'#00e5ff', r:30 },
-    h3: { x:0.08, y:0.7, label:'H3\nVegas',     color:'#00e676', r:30 },
-    h4: { x:0.08, y:0.95, label:'H4\nIllinois', color:'#b388ff', r:30 },
-    s1: { x:0.32, y:0.35, label:'S1\nAccess',   color:'#00e5ff', r:38, isSwitch:true },
-    s2: { x:0.32, y:0.75, label:'S2\nAccess',   color:'#00e5ff', r:38, isSwitch:true },
-    s3: { x:0.68, y:0.35, label:'S3\nAgg',      color:'#ffab00', r:38, isSwitch:true },
-    s4: { x:0.68, y:0.75, label:'S4\nAgg',      color:'#ffab00', r:38, isSwitch:true },
-    h9: { x:0.92, y:0.2, label:'H9\nSrv1',     color:'#4caf50', r:28 },
-    h10:{ x:0.92, y:0.45, label:'H10\nSrv2',    color:'#4caf50', r:28 },
-    h11:{ x:0.92, y:0.7, label:'H11\nSrv3',    color:'#4caf50', r:28 },
-    h12:{ x:0.92, y:0.95, label:'H12\nSrv4',    color:'#4caf50', r:28 },
+    h1: { x:0.06, y:0.15, label:'H1\nCUBIC',    color:'#ff1744', r:28 },
+    h2: { x:0.06, y:0.40, label:'H2\nBBR',      color:'#00e5ff', r:28 },
+    h3: { x:0.06, y:0.65, label:'H3\nVegas',     color:'#00e676', r:28 },
+    h4: { x:0.06, y:0.90, label:'H4\nIllinois', color:'#b388ff', r:28 },
+    s1: { x:0.35, y:0.50, label:'S1\nIngress',  color:'#00e5ff', r:42, isSwitch:true },
+    s2: { x:0.65, y:0.50, label:'S2\nEgress',   color:'#ffab00', r:42, isSwitch:true },
+    h5: { x:0.94, y:0.15, label:'H5\nRcv1',     color:'#4caf50', r:28 },
+    h6: { x:0.94, y:0.40, label:'H6\nRcv2',     color:'#4caf50', r:28 },
+    h7: { x:0.94, y:0.65, label:'H7\nRcv3',     color:'#4caf50', r:28 },
+    h8: { x:0.94, y:0.90, label:'H8\nRcv4',     color:'#4caf50', r:28 },
 };
 const LINKS = [
     ['h1','s1'], ['h2','s1'], ['h3','s1'], ['h4','s1'],
-    ['s1','s3'], ['s1','s4'],
-    ['s2','s3'], ['s2','s4'],
-    ['s3','h9'], ['s3','h10'],
-    ['s4','h11'], ['s4','h12'],
+    ['s1','s2'],
+    ['s2','h5'], ['s2','h6'], ['s2','h7'], ['s2','h8'],
 ];
-// Which flow goes where: flow_id -> [path of node keys]
 const FLOW_PATHS = {
-    1: ['h1','s1','s3','h9'],
-    2: ['h2','s1','s3','h10'],
-    3: ['h3','s1','s4','h11'],
-    4: ['h4','s1','s4','h12'],
+    1: ['h1','s1','s2','h5'],
+    2: ['h2','s1','s2','h6'],
+    3: ['h3','s1','s2','h7'],
+    4: ['h4','s1','s2','h8'],
 };
 
 let currentKarma = {1:100, 2:100, 3:100, 4:100};
@@ -567,15 +538,23 @@ function drawTopo() {
     tctx.clearRect(0,0,w,h);
 
     // Draw links
-    tctx.strokeStyle = 'rgba(255,255,255,0.08)'; tctx.lineWidth = 1.5;
     for (let [a,b] of LINKS) {
+        let na = NODES[a], nb = NODES[b];
+        tctx.strokeStyle = (a === 's1' && b === 's2') ? 'rgba(255,171,0,0.35)' : 'rgba(255,255,255,0.08)';
+        tctx.lineWidth = (a === 's1' && b === 's2') ? 4 : 1.5;
         tctx.beginPath();
-        tctx.moveTo(NODES[a].x*w, NODES[a].y*h);
-        tctx.lineTo(NODES[b].x*w, NODES[b].y*h);
+        tctx.moveTo(na.x*w, na.y*h);
+        tctx.lineTo(nb.x*w, nb.y*h);
         tctx.stroke();
     }
 
-    // Spawn particles for active flows
+    // Bottleneck label
+    let bx = (NODES.s1.x + NODES.s2.x)/2 * w;
+    let by = NODES.s1.y * h - 28;
+    tctx.fillStyle = '#ffab00'; tctx.font = 'bold 11px Inter'; tctx.textAlign = 'center';
+    tctx.fillText('BOTTLENECK (3 Mbps)', bx, by);
+
+    // Spawn particles
     for (let fid = 1; fid <= 4; fid++) {
         let k = currentKarma[fid] || 100;
         let dropped = (k < 40 && Math.random() < 0.6);
@@ -598,7 +577,7 @@ function drawTopo() {
             tctx.fillStyle = 'rgba(0,229,255,0.06)';
             tctx.strokeStyle = n.color;
             tctx.lineWidth = 2;
-            let rw = 70, rh = 46;
+            let rw = 74, rh = 48;
             tctx.beginPath();
             tctx.roundRect(x-rw/2, y-rh/2, rw, rh, 8);
             tctx.fill(); tctx.stroke();
@@ -608,7 +587,6 @@ function drawTopo() {
             tctx.strokeStyle = n.color; tctx.lineWidth = 2;
             tctx.fill(); tctx.stroke();
         }
-        // Label
         tctx.fillStyle = '#ccc'; tctx.font = '11px Inter'; tctx.textAlign = 'center';
         let lines = n.label.split('\n');
         for (let li = 0; li < lines.length; li++) {
@@ -627,7 +605,6 @@ async function poll() {
         const r = await fetch('/api/live');
         const d = await r.json();
 
-        // Update karma cards
         for (let fid = 1; fid <= 4; fid++) {
             let f = d.flows[fid];
             if (!f) continue;
@@ -639,7 +616,6 @@ async function poll() {
             document.getElementById('c'+fid).className = 'color-badge ' + badgeClass(k);
         }
 
-        // Update stats
         document.getElementById('jfi-val').textContent = d.jfi.toFixed(4);
         document.getElementById('pdr-val').textContent = (d.pdr_pct || 0).toFixed(1) + '%';
         document.getElementById('cum-pdr-val').textContent = (d.cum_pdr_pct || 0).toFixed(2) + '%';
@@ -651,7 +627,6 @@ async function poll() {
             document.getElementById('uptime').textContent = elapsed + 's elapsed';
         }
 
-        // Update chart
         if (d.history && d.history.length > 0) {
             if (!startTs) startTs = d.history[0].ts;
             let labels = d.history.map(h => Math.round(h.ts - startTs) + 's');
@@ -663,20 +638,17 @@ async function poll() {
             karmaChart.data.datasets[3].data = d.history.map(h => h.flows['4'] || 0);
             karmaChart.update();
 
-            // ── Update RL Chart ──
             rlChart.data.labels = labels;
             rlChart.data.datasets[0].data = d.history.map(h => h.rl_penalty || 8);
             rlChart.data.datasets[1].data = d.history.map(h => h.rl_reward || 4);
             rlChart.data.datasets[2].data = d.history.map(h => h.rl_budget || 4688);
             rlChart.update();
 
-            // ── Update Link Util Chart ──
             utilChart.data.labels = labels;
             utilChart.data.datasets[0].data = d.history.map(h => h.eff_pct || 0);
             utilChart.update();
         }
 
-        // ── Update RL live numbers ──
         if (d.rl_penalty !== undefined) {
             document.getElementById('rl-pen-val').textContent = d.rl_penalty;
             document.getElementById('rl-rew-val').textContent = d.rl_reward;
@@ -699,12 +671,11 @@ def index():
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("  KBCS v2 — Live ObsCenter Dashboard")
-    print("  Open in browser: http://localhost:5000")
+    print("  KBCS v2 — Dumbbell Topology Dashboard")
+    print("  Open in browser: http://localhost:5001")
     print("=" * 60)
 
-    # Start background poller thread
     poller = threading.Thread(target=poll_switch_registers, daemon=True)
     poller.start()
 
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5001, debug=False)

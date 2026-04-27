@@ -420,24 +420,26 @@ control MyIngress(inout parsed_headers_t hdr,
                                 }
 
                                 // Compute utilisation ratio: ratio_i = flow_bytes / expired_budget
+                                // NOTE: Thresholds scaled for 3 Mbps bottleneck (250 pps)
+                                // where max queue depth is ~10-15 packets
                                 bit<19> pfq_thresh;
                                 if (meta.flow_bytes < (expired_budget >> 2)) {
                                     // < 25% used: heavily underutilised — give GREEN-level headroom
-                                    pfq_thresh = 500;
+                                    pfq_thresh = 15;
                                 } else if (meta.flow_bytes < (expired_budget >> 1)) {
                                     // 25–50% used: moderate headroom
-                                    pfq_thresh = 300;
+                                    pfq_thresh = 10;
                                 } else if (meta.flow_bytes < expired_budget) {
                                     // 50–100% used: within budget, standard headroom
-                                    pfq_thresh = 150;
+                                    pfq_thresh = 6;
                                 } else {
                                     // Over budget: strict color-based throttle
                                     if (meta.flow_color == GREEN) {
-                                        pfq_thresh = 400;
+                                        pfq_thresh = 12;
                                     } else if (meta.flow_color == YELLOW) {
-                                        pfq_thresh = 120;
+                                        pfq_thresh = 5;
                                     } else {
-                                        pfq_thresh = 40;  // RED: tightly quarantined
+                                        pfq_thresh = 2;  // RED: tightly quarantined
                                     }
                                 }
                                 reg_pfq_threshold.write(idx, pfq_thresh);
@@ -615,9 +617,10 @@ control MyEgress(inout parsed_headers_t hdr,
                 if (drop_threshold == 0) {
                     // New flows whose window has never expired yet:
                     // use conservative static defaults by color
-                    if (meta.flow_color == 2w2)      { drop_threshold = 400; } // GREEN
-                    else if (meta.flow_color == 2w1) { drop_threshold = 150; } // YELLOW
-                    else                             { drop_threshold = 60;  } // RED
+                    // NOTE: Scaled for 3 Mbps bottleneck (max qdepth ~10-15)
+                    if (meta.flow_color == 2w2)      { drop_threshold = 12; } // GREEN
+                    else if (meta.flow_color == 2w1) { drop_threshold = 5;  } // YELLOW
+                    else                             { drop_threshold = 2;  } // RED
                 }
 
                 // PFQ Proactive Drop: if this flow's share of the physical queue
