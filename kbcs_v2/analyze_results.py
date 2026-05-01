@@ -27,9 +27,11 @@ def load_csv(path):
         for row in reader:
             parsed = {}
             for k, v in row.items():
+                if k is None or v is None:
+                    continue
                 try:
                     parsed[k] = float(v)
-                except ValueError:
+                except (ValueError, TypeError):
                     parsed[k] = v
             rows.append(parsed)
     return rows
@@ -126,6 +128,30 @@ def print_comparison(cross_stats, dbell_stats):
         print(f"  {name:<30} {c['mean']:>8.4f}±{c['std']:<8.4f} {d['mean']:>8.4f}±{d['std']:<8.4f} {sign}{delta:>10.4f}")
     print("=" * 90)
 
+def print_kbcs_vs_fifo(topo_name, kbcs_stats, fifo_stats):
+    """Print KBCS vs FIFO comparison for a single topology."""
+    print()
+    print("=" * 90)
+    print(f"  KBCS vs FIFO Baseline — {topo_name} Topology")
+    print("=" * 90)
+    print(f"  {'Metric':<30} {'FIFO (Mean±SD)':<20} {'KBCS (Mean±SD)':<20} {'Improvement':<12}")
+    print("-" * 90)
+
+    for name in kbcs_stats:
+        f = fifo_stats[name]
+        k = kbcs_stats[name]
+        delta = k['mean'] - f['mean']
+        # For JFI/throughput/utilization: positive delta = improvement
+        # For PDR: negative delta = improvement (fewer drops)
+        if 'Drop' in name:
+            pct = (-delta / f['mean'] * 100.0) if f['mean'] > 0 else 0
+            sign = "↓" if delta < 0 else "↑"
+        else:
+            pct = (delta / f['mean'] * 100.0) if f['mean'] > 0 else 0
+            sign = "↑" if delta > 0 else "↓"
+        print(f"  {name:<30} {f['mean']:>8.4f}±{f['std']:<8.4f} {k['mean']:>8.4f}±{k['std']:<8.4f} {sign}{abs(pct):>8.1f}%")
+    print("=" * 90)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -134,6 +160,8 @@ def main():
 
     cross_file = 'results/cross_results.csv'
     dbell_file = 'results/dumbbell_results.csv'
+    fifo_cross_file = 'results/fifo_cross_results.csv'
+    fifo_dbell_file = 'results/fifo_dumbbell_results.csv'
 
     if args.csv:
         # Analyze single file
@@ -145,22 +173,44 @@ def main():
         analyze_topology(rows, topo.title())
         return
 
-    # Analyze both topologies
+    # Analyze KBCS results
     cross_stats = None
     dbell_stats = None
 
     if os.path.exists(cross_file):
         rows = load_csv(cross_file)
         if rows:
-            cross_stats = analyze_topology(rows, "Cross")
+            cross_stats = analyze_topology(rows, "Cross (KBCS)")
 
     if os.path.exists(dbell_file):
         rows = load_csv(dbell_file)
         if rows:
-            dbell_stats = analyze_topology(rows, "Dumbbell")
+            dbell_stats = analyze_topology(rows, "Dumbbell (KBCS)")
 
+    # Analyze FIFO baselines
+    fifo_cross_stats = None
+    fifo_dbell_stats = None
+
+    if os.path.exists(fifo_cross_file):
+        rows = load_csv(fifo_cross_file)
+        if rows:
+            fifo_cross_stats = analyze_topology(rows, "Cross (FIFO)")
+
+    if os.path.exists(fifo_dbell_file):
+        rows = load_csv(fifo_dbell_file)
+        if rows:
+            fifo_dbell_stats = analyze_topology(rows, "Dumbbell (FIFO)")
+
+    # Print cross-topology comparison (KBCS vs KBCS)
     if cross_stats and dbell_stats:
         print_comparison(cross_stats, dbell_stats)
+
+    # Print KBCS vs FIFO comparisons
+    if dbell_stats and fifo_dbell_stats:
+        print_kbcs_vs_fifo("Dumbbell", dbell_stats, fifo_dbell_stats)
+
+    if cross_stats and fifo_cross_stats:
+        print_kbcs_vs_fifo("Cross", cross_stats, fifo_cross_stats)
 
     if not cross_stats and not dbell_stats:
         print("No result files found. Run test_suite.sh first.")
@@ -169,3 +219,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

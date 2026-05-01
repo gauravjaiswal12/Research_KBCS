@@ -8,6 +8,7 @@
 #   bash test_suite.sh                          # 30 runs, 60s each, cross-topo
 #   bash test_suite.sh --runs 10 --duration 60  # 10 runs, 60s each
 #   bash test_suite.sh --topo dumbbell          # dumbbell topology
+#   bash test_suite.sh --mode fifo              # FIFO baseline (no KBCS)
 # ============================================================================
 
 cd "$(dirname "$0")"
@@ -18,6 +19,7 @@ VENV_PYTHON=/home/p4/src/p4dev-python-venv/bin/python3
 NUM_RUNS=30
 RUN_DURATION=60
 TOPO="cross"      # "cross" or "dumbbell"
+MODE="kbcs"       # "kbcs" or "fifo"
 
 # Parse args
 while [[ $# -gt 0 ]]; do
@@ -25,14 +27,22 @@ while [[ $# -gt 0 ]]; do
         --runs)     NUM_RUNS="$2";      shift 2 ;;
         --duration) RUN_DURATION="$2";  shift 2 ;;
         --topo)     TOPO="$2";          shift 2 ;;
+        --mode)     MODE="$2";          shift 2 ;;
         *)          shift ;;
     esac
 done
 
 # Set topology-specific config
+# Set CSV prefix based on mode
+if [[ "$MODE" == "fifo" ]]; then
+    CSV_PREFIX="fifo_"
+else
+    CSV_PREFIX=""
+fi
+
 if [[ "$TOPO" == "dumbbell" ]]; then
     TOPO_JSON="kbcs-topo/dbell_topology.json"
-    CSV_FILE="results/dumbbell_results.csv"
+    CSV_FILE="results/${CSV_PREFIX}dumbbell_results.csv"
     THRIFT_PORTS="9090 9091"
     SWITCH_COUNT=2
     IPERF_CMDS=$(cat <<'IEOF'
@@ -50,7 +60,7 @@ IEOF
     RL_CMD="python3 controller/rl_controller.py --flows 1,2,3,4 --duration $RUN_DURATION --switches 9090 --reset"
 else
     TOPO_JSON="kbcs-topo/topology.json"
-    CSV_FILE="results/cross_results.csv"
+    CSV_FILE="results/${CSV_PREFIX}cross_results.csv"
     THRIFT_PORTS="9090 9091 9092 9093"
     SWITCH_COUNT=4
     IPERF_CMDS=$(cat <<'IEOF'
@@ -86,16 +96,15 @@ sudo modprobe tcp_illinois 2>/dev/null || true
 # Create results directory
 mkdir -p results
 
-# Write CSV header if file doesn't exist
-if [ ! -f "$CSV_FILE" ]; then
-    echo "run,topology,duration,jfi,agg_throughput_mbps,link_util_pct,pdr_pct,avg_karma,karma_1,karma_2,karma_3,karma_4,fwd_1,fwd_2,fwd_3,fwd_4,drops_1,drops_2,drops_3,drops_4" > "$CSV_FILE"
-fi
+# Delete old CSV and start fresh (avoids mixing data from different configs)
+rm -f "$CSV_FILE"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║       KBCS v2 — 30-Run Statistical Test Suite           ║"
 echo "╠══════════════════════════════════════════════════════════╣"
 echo "║  Topology:  $TOPO                                       "
+echo "║  Mode:      $MODE                                       "
 echo "║  Runs:      $NUM_RUNS                                   "
 echo "║  Duration:  ${RUN_DURATION}s per run                    "
 echo "║  Total:     ~$((NUM_RUNS * (RUN_DURATION + 30)))s       "
@@ -152,10 +161,20 @@ MNEOF
     done
     sleep 3
 
-    # ── Start RL controller ──────────────────────────────────────
-    echo "  [4/5] Starting RL controller..."
-    $RL_CMD > /tmp/kbcs_test_rl.log 2>&1 &
-    RL_PID=$!
+    # ── Start RL controller (or FIFO bypass) ─────────────────────
+    if [[ "$MODE" == "fifo" ]]; then
+        echo "  [4/5] FIFO mode — skipping RL controller..."
+        # Set fair_bytes to huge value so no flow ever exceeds budget
+        # → all flows stay GREEN, no karma penalties, no PFQ drops = pure FIFO
+        for port in $THRIFT_PORTS; do
+            echo "register_write MyIngress.reg_fair_bytes 0 999999" | simple_switch_CLI --thrift-port $port >/dev/null 2>&1
+        done
+        RL_PID=""
+    else
+        echo "  [4/5] Starting RL controller..."
+        $RL_CMD > /tmp/kbcs_test_rl.log 2>&1 &
+        RL_PID=$!
+    fi
 
     # ── Wait for experiment to complete ──────────────────────────
     echo "  [5/5] Running traffic for ${RUN_DURATION}s..."
@@ -171,7 +190,7 @@ MNEOF
         --thrift-port 9090
 
     # ── Cleanup ──────────────────────────────────────────────────
-    kill $RL_PID 2>/dev/null || true
+    if [[ -n "$RL_PID" ]]; then kill $RL_PID 2>/dev/null || true; fi
     kill $MN_PID 2>/dev/null || true
     sudo mn -c > /dev/null 2>&1 || true
     sudo killall -9 simple_switch_grpc 2>/dev/null || true

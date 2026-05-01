@@ -6,7 +6,8 @@
             "commands": [
                 "route add default gw 10.1.1.10 dev eth0",
                 "arp -i eth0 -s 10.1.1.10 08:00:00:01:01:00",
-                "sudo sysctl -w net.ipv4.tcp_congestion_control=cubic"
+                "sudo sysctl -w net.ipv4.tcp_congestion_control=cubic",
+                "tc qdisc add dev eth0 root netem delay 5ms"
             ]
         },
         "h2": {
@@ -15,7 +16,8 @@
             "commands": [
                 "route add default gw 10.1.1.10 dev eth0",
                 "arp -i eth0 -s 10.1.1.10 08:00:00:01:01:00",
-                "sudo sysctl -w net.ipv4.tcp_congestion_control=bbr"
+                "sudo sysctl -w net.ipv4.tcp_congestion_control=bbr",
+                "tc qdisc add dev eth0 root netem delay 5ms"
             ]
         },
         "h3": {
@@ -24,7 +26,8 @@
             "commands": [
                 "route add default gw 10.1.1.10 dev eth0",
                 "arp -i eth0 -s 10.1.1.10 08:00:00:01:01:00",
-                "sudo sysctl -w net.ipv4.tcp_congestion_control=vegas"
+                "sudo sysctl -w net.ipv4.tcp_congestion_control=vegas",
+                "tc qdisc add dev eth0 root netem delay 5ms"
             ]
         },
         "h4": {
@@ -33,7 +36,8 @@
             "commands": [
                 "route add default gw 10.1.1.10 dev eth0",
                 "arp -i eth0 -s 10.1.1.10 08:00:00:01:01:00",
-                "sudo sysctl -w net.ipv4.tcp_congestion_control=illinois"
+                "sudo sysctl -w net.ipv4.tcp_congestion_control=illinois",
+                "tc qdisc add dev eth0 root netem delay 5ms"
             ]
         },
         "h5": {
@@ -41,7 +45,8 @@
             "mac": "08:00:00:01:02:01",
             "commands": [
                 "route add default gw 10.1.2.10 dev eth0",
-                "arp -i eth0 -s 10.1.2.10 08:00:00:01:02:00"
+                "arp -i eth0 -s 10.1.2.10 08:00:00:01:02:00",
+                "tc qdisc add dev eth0 root netem delay 5ms"
             ]
         },
         "h6": {
@@ -49,7 +54,8 @@
             "mac": "08:00:00:01:02:02",
             "commands": [
                 "route add default gw 10.1.2.10 dev eth0",
-                "arp -i eth0 -s 10.1.2.10 08:00:00:01:02:00"
+                "arp -i eth0 -s 10.1.2.10 08:00:00:01:02:00",
+                "tc qdisc add dev eth0 root netem delay 5ms"
             ]
         },
         "h7": {
@@ -57,7 +63,8 @@
             "mac": "08:00:00:01:02:03",
             "commands": [
                 "route add default gw 10.1.2.10 dev eth0",
-                "arp -i eth0 -s 10.1.2.10 08:00:00:01:02:00"
+                "arp -i eth0 -s 10.1.2.10 08:00:00:01:02:00",
+                "tc qdisc add dev eth0 root netem delay 5ms"
             ]
         },
         "h8": {
@@ -65,7 +72,8 @@
             "mac": "08:00:00:01:02:04",
             "commands": [
                 "route add default gw 10.1.2.10 dev eth0",
-                "arp -i eth0 -s 10.1.2.10 08:00:00:01:02:00"
+                "arp -i eth0 -s 10.1.2.10 08:00:00:01:02:00",
+                "tc qdisc add dev eth0 root netem delay 5ms"
             ]
         }
     },

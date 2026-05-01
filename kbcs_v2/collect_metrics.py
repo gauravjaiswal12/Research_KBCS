@@ -38,16 +38,25 @@ def main():
     parser.add_argument('--thrift-port', type=int, default=9090)
     args = parser.parse_args()
 
-    port = args.thrift_port
-
-    # Read per-flow metrics from S1 (all flows transit S1 in both topologies)
+    # Read per-flow metrics
+    # For cross topology: S1 has flows 1-4, S2 has flows 5-8
+    # For dumbbell: S1 has all flows 1-4
     karma = []
     fwd = []
     drops = []
+
+    # Always read flows 1-4 from S1 (port 9090)
     for fid in range(1, 5):
-        karma.append(read_register(port, "MyIngress.reg_karma", fid))
-        fwd.append(read_register(port, "MyIngress.reg_forwarded_bytes", fid))
-        drops.append(read_register(port, "MyEgress.reg_drops", fid))
+        karma.append(read_register(9090, "MyIngress.reg_karma", fid))
+        fwd.append(read_register(9090, "MyIngress.reg_forwarded_bytes", fid))
+        drops.append(read_register(9090, "MyEgress.reg_drops", fid))
+
+    # For cross topology, also read flows 5-8 from S2 (port 9091)
+    if args.topo == "cross":
+        for fid in range(5, 9):
+            karma.append(read_register(9091, "MyIngress.reg_karma", fid))
+            fwd.append(read_register(9091, "MyIngress.reg_forwarded_bytes", fid))
+            drops.append(read_register(9091, "MyEgress.reg_drops", fid))
 
     # ── Compute metrics ──────────────────────────────────────────────────────
 
@@ -63,8 +72,10 @@ def main():
     # Aggregate throughput (Mbps)
     agg_throughput_mbps = (sum_x * 8) / (args.duration * 1_000_000) if args.duration > 0 else 0.0
 
-    # Link utilization (bottleneck = 3 Mbps)
-    link_util_pct = min((agg_throughput_mbps / 3.0) * 100.0, 100.0)
+    # Link utilization (bottleneck = 3 Mbps per bottleneck link)
+    # Cross has 2 bottleneck links (6 Mbps total), dumbbell has 1 (3 Mbps)
+    total_link_capacity = 6.0 if args.topo == "cross" else 3.0
+    link_util_pct = min((agg_throughput_mbps / total_link_capacity) * 100.0, 100.0)
 
     # Packet Drop Ratio
     total_drops = sum(drops)
@@ -76,19 +87,23 @@ def main():
     avg_karma = sum(karma) / len(karma) if karma else 0.0
 
     # ── Append to CSV ────────────────────────────────────────────────────────
+    num_flows = len(karma)
     row = {
         'run': args.run,
         'topology': args.topo,
         'duration': args.duration,
+        'num_flows': num_flows,
         'jfi': round(jfi, 4),
         'agg_throughput_mbps': round(agg_throughput_mbps, 4),
         'link_util_pct': round(link_util_pct, 2),
         'pdr_pct': round(pdr_pct, 4),
         'avg_karma': round(avg_karma, 2),
-        'karma_1': karma[0], 'karma_2': karma[1], 'karma_3': karma[2], 'karma_4': karma[3],
-        'fwd_1': fwd[0], 'fwd_2': fwd[1], 'fwd_3': fwd[2], 'fwd_4': fwd[3],
-        'drops_1': drops[0], 'drops_2': drops[1], 'drops_3': drops[2], 'drops_4': drops[3],
     }
+    # Add per-flow data
+    for i in range(num_flows):
+        row[f'karma_{i+1}'] = karma[i]
+        row[f'fwd_{i+1}'] = fwd[i]
+        row[f'drops_{i+1}'] = drops[i]
 
     fieldnames = list(row.keys())
     file_exists = os.path.exists(args.csv)
@@ -100,10 +115,14 @@ def main():
         writer.writerow(row)
 
     # Print summary
+    karma_str = ','.join(str(k) for k in karma)
+    fwd_str = ','.join(str(f) for f in fwd)
     print(f"    Run {args.run}: JFI={jfi:.4f}  Throughput={agg_throughput_mbps:.2f} Mbps  "
           f"LinkUtil={link_util_pct:.1f}%  PDR={pdr_pct:.2f}%  "
-          f"AvgKarma={avg_karma:.0f}  Karma=[{karma[0]},{karma[1]},{karma[2]},{karma[3]}]")
+          f"AvgKarma={avg_karma:.0f}  Karma=[{karma_str}]  "
+          f"({num_flows} flows)")
 
 
 if __name__ == '__main__':
     main()
+
