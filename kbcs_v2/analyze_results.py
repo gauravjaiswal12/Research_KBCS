@@ -141,8 +141,6 @@ def print_kbcs_vs_fifo(topo_name, kbcs_stats, fifo_stats):
         f = fifo_stats[name]
         k = kbcs_stats[name]
         delta = k['mean'] - f['mean']
-        # For JFI/throughput/utilization: positive delta = improvement
-        # For PDR: negative delta = improvement (fewer drops)
         if 'Drop' in name:
             pct = (-delta / f['mean'] * 100.0) if f['mean'] > 0 else 0
             sign = "↓" if delta < 0 else "↑"
@@ -151,6 +149,63 @@ def print_kbcs_vs_fifo(topo_name, kbcs_stats, fifo_stats):
             sign = "↑" if delta > 0 else "↓"
         print(f"  {name:<30} {f['mean']:>8.4f}±{f['std']:<8.4f} {k['mean']:>8.4f}±{k['std']:<8.4f} {sign}{abs(pct):>8.1f}%")
     print("=" * 90)
+
+
+def analyze_p4cci(rows, topo_name):
+    """Analyze P4CCI rows (no karma/PDR from registers)."""
+    metrics = {
+        "Jain's Fairness Index": [r['jfi'] for r in rows],
+        "Agg. Throughput (Mbps)": [r['agg_throughput_mbps'] for r in rows],
+        "Link Utilization (%)": [r['link_util_pct'] for r in rows],
+    }
+    stats = {name: compute_stats(vals) for name, vals in metrics.items()}
+    print_table(f"P4CCI Baseline — {topo_name} Topology (N={len(rows)} runs)", stats)
+    return stats
+
+
+def print_three_way(topo_name, fifo_stats, p4cci_stats, kbcs_stats):
+    """Print FIFO vs P4CCI vs KBCS comparison."""
+    # Use only metrics available in all three
+    common = ["Jain's Fairness Index", "Agg. Throughput (Mbps)", "Link Utilization (%)"]
+    print()
+    print("=" * 106)
+    print(f"  FIFO vs P4CCI vs KBCS — {topo_name} Topology (3-Way Comparison)")
+    print("=" * 106)
+    print(f"  {'Metric':<28} {'FIFO (Mean±SD)':<20} {'P4CCI (Mean±SD)':<20} {'KBCS (Mean±SD)':<20} {'KBCS vs P4CCI':<14}")
+    print("-" * 106)
+
+    for name in common:
+        f = fifo_stats.get(name, {'mean': 0, 'std': 0})
+        p = p4cci_stats.get(name, {'mean': 0, 'std': 0})
+        k = kbcs_stats.get(name, {'mean': 0, 'std': 0})
+        delta = k['mean'] - p['mean']
+        pct = (delta / p['mean'] * 100.0) if p['mean'] > 0 else 0
+        sign = "↑" if delta > 0 else "↓"
+        print(f"  {name:<28} {f['mean']:>7.4f}±{f['std']:<7.4f} {p['mean']:>7.4f}±{p['std']:<7.4f} {k['mean']:>7.4f}±{k['std']:<7.4f}  {sign}{abs(pct):>7.1f}%")
+    print("=" * 106)
+
+
+def print_three_way_latex(topo_name, fifo_stats, p4cci_stats, kbcs_stats):
+    """Print LaTeX 3-way comparison table."""
+    common = ["Jain's Fairness Index", "Agg. Throughput (Mbps)", "Link Utilization (%)"]
+    print()
+    print(f"% LaTeX Table: 3-Way Comparison — {topo_name} Topology")
+    print(r"\begin{table}[htbp]")
+    print(r"\centering")
+    print(f"\\caption{{FIFO vs P4CCI vs KBCS — {topo_name} Topology}}")
+    print(f"\\label{{tab:3way_{topo_name.lower()}}}")
+    print(r"\begin{tabular}{lccc}")
+    print(r"\hline")
+    print(r"\textbf{Metric} & \textbf{FIFO} & \textbf{P4CCI} & \textbf{KBCS (Ours)} \\")
+    print(r"\hline")
+    for name in common:
+        f = fifo_stats.get(name, {'mean': 0, 'std': 0})
+        p = p4cci_stats.get(name, {'mean': 0, 'std': 0})
+        k = kbcs_stats.get(name, {'mean': 0, 'std': 0})
+        print(f"{name} & {f['mean']:.4f}$\\pm${f['std']:.4f} & {p['mean']:.4f}$\\pm${p['std']:.4f} & \\textbf{{{k['mean']:.4f}$\\pm${k['std']:.4f}}} \\\\")
+    print(r"\hline")
+    print(r"\end{tabular}")
+    print(r"\end{table}")
 
 
 def main():
@@ -162,9 +217,10 @@ def main():
     dbell_file = 'results/dumbbell_results.csv'
     fifo_cross_file = 'results/fifo_cross_results.csv'
     fifo_dbell_file = 'results/fifo_dumbbell_results.csv'
+    p4cci_cross_file = 'results/p4cci_cross_results.csv'
+    p4cci_dbell_file = 'results/p4cci_dumbbell_results.csv'
 
     if args.csv:
-        # Analyze single file
         if not os.path.exists(args.csv):
             print(f"ERROR: {args.csv} not found")
             sys.exit(1)
@@ -173,7 +229,7 @@ def main():
         analyze_topology(rows, topo.title())
         return
 
-    # Analyze KBCS results
+    # ── Analyze KBCS results ──
     cross_stats = None
     dbell_stats = None
 
@@ -187,7 +243,7 @@ def main():
         if rows:
             dbell_stats = analyze_topology(rows, "Dumbbell (KBCS)")
 
-    # Analyze FIFO baselines
+    # ── Analyze FIFO baselines ──
     fifo_cross_stats = None
     fifo_dbell_stats = None
 
@@ -201,16 +257,39 @@ def main():
         if rows:
             fifo_dbell_stats = analyze_topology(rows, "Dumbbell (FIFO)")
 
-    # Print cross-topology comparison (KBCS vs KBCS)
+    # ── Analyze P4CCI baselines ──
+    p4cci_cross_stats = None
+    p4cci_dbell_stats = None
+
+    if os.path.exists(p4cci_cross_file):
+        rows = load_csv(p4cci_cross_file)
+        if rows:
+            p4cci_cross_stats = analyze_p4cci(rows, "Cross (P4CCI)")
+
+    if os.path.exists(p4cci_dbell_file):
+        rows = load_csv(p4cci_dbell_file)
+        if rows:
+            p4cci_dbell_stats = analyze_p4cci(rows, "Dumbbell (P4CCI)")
+
+    # ── Cross vs Dumbbell (KBCS internal) ──
     if cross_stats and dbell_stats:
         print_comparison(cross_stats, dbell_stats)
 
-    # Print KBCS vs FIFO comparisons
+    # ── KBCS vs FIFO (2-way) ──
     if dbell_stats and fifo_dbell_stats:
         print_kbcs_vs_fifo("Dumbbell", dbell_stats, fifo_dbell_stats)
 
     if cross_stats and fifo_cross_stats:
         print_kbcs_vs_fifo("Cross", cross_stats, fifo_cross_stats)
+
+    # ── 3-Way Comparison: FIFO vs P4CCI vs KBCS ──
+    if dbell_stats and fifo_dbell_stats and p4cci_dbell_stats:
+        print_three_way("Dumbbell", fifo_dbell_stats, p4cci_dbell_stats, dbell_stats)
+        print_three_way_latex("Dumbbell", fifo_dbell_stats, p4cci_dbell_stats, dbell_stats)
+
+    if cross_stats and fifo_cross_stats and p4cci_cross_stats:
+        print_three_way("Cross", fifo_cross_stats, p4cci_cross_stats, cross_stats)
+        print_three_way_latex("Cross", fifo_cross_stats, p4cci_cross_stats, cross_stats)
 
     if not cross_stats and not dbell_stats:
         print("No result files found. Run test_suite.sh first.")
